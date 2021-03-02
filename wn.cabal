@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c9c6a9f443629c6dc5708cd60b2ae5ee6bfd5852cfa45e78b98337cdedddb580
+-- hash: 9aad13f2ac1751719bddf21f81d2179823d12727654972e9b1448c63c4312bf4
 
 name:           wn
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Lib
+      Solr
   other-modules:
       Paths_wn
   hs-source-dirs:
@@ -35,6 +36,7 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
   default-language: Haskell2010
 
 executable wn-exe
@@ -47,6 +49,7 @@ executable wn-exe
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , wn
   default-language: Haskell2010
 
@@ -61,5 +64,6 @@ test-suite wn-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , wn
   default-language: Haskell2010
