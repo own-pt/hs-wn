@@ -11,8 +11,8 @@ import GHC.Generics
 
 data Vote =
   Vote
-    { id :: String
-    , date :: Integer
+    { date :: Integer
+    -- , id :: String 
     , suggestion_id :: String
     , user :: String
     , value :: Integer
@@ -147,3 +147,18 @@ readJL :: (L.ByteString -> b) -> FilePath -> IO [b]
 readJL reader path = do
   content <- L.readFile path
   return (map reader $ L.split 10 content)
+
+{- lists only acceptable suggestions -}
+filterSuggestions io_doc_ei_suggestions io_doc_ei_votes threshold =
+  fmap (filter $ \s -> filterSuggestion s io_votes threshold) io_suggestions
+  where
+    io_votes = fmap (map _source . rights) io_doc_ei_votes
+    io_suggestions = fmap (map _source . rights) io_doc_ei_suggestions
+    
+filterSuggestion suggestion io_votes threshold =
+  True -- just for test
+  fmap (\v -> )io_suggestion_score
+  where
+    io_related_votes = fmap (filter $ \v -> Solr.id suggestion == suggestion_id v) io_votes
+    io_suggestion_score = fmap (\l -> sum [value v | v <-  l]) io_related_votes
+    
