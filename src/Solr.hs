@@ -108,13 +108,13 @@ data Synset =
 -- records do not allow parameters! This is a problem
 -- here. alternatives? a Document wraps Synset, Suggestion, Vote etc.
 
-data Document =
+data Document a =
   Document
     { _index :: String
     , _type :: String
     , _id :: String
     , _score :: Int
-    , _source :: Vote
+    , _source :: a
     }
   deriving (Show, Generic)
 
@@ -136,12 +136,14 @@ instance FromJSON Suggestion where
 
 instance FromJSON Pointer
 instance FromJSON Vote
-instance FromJSON Document
 
-readJ :: L.ByteString -> Either String Document
-readJ s = eitherDecode s :: Either String Document
+instance FromJSON a => FromJSON (Document a)
 
-readJL :: FilePath -> IO [Either String Document]
-readJL path = do
+readSuggestion s = eitherDecode s :: Either String (Document Suggestion)
+readSynset s = eitherDecode s :: Either String (Document Synset)
+readVote s = eitherDecode s :: Either String (Document Vote)
+
+readJL :: (L.ByteString -> b) -> FilePath -> IO [b]
+readJL reader path = do
   content <- L.readFile path
-  return (map readJ $ L.split 10 content)
+  return (map reader $ L.split 10 content)
