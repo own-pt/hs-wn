@@ -9,17 +9,28 @@ import Data.List
 import GHC.Generics
 
 
+data Vote =
+  Vote
+    { id :: String
+    , date :: Integer
+    , suggestion_id :: String
+    , user :: String
+    , value :: Integer
+    }
+  deriving (Show, Generic)
+
 data Suggestion =
   Suggestion
     { status :: String
     , user :: String
     , params :: String
+    , id :: String
     , action :: String
     , stype :: String
     , vote_score :: Int
     , sum_votes :: Int
     , provenance :: String
-    , date :: String
+    , date :: Integer
     , doc_id :: String
     , doc_type :: String
     }
@@ -93,13 +104,17 @@ data Synset =
     }
   deriving (Show, Generic)
 
+
+-- records do not allow parameters! This is a problem
+-- here. alternatives? a Document wraps Synset, Suggestion, Vote etc.
+
 data Document =
   Document
     { _index :: String
     , _type :: String
     , _id :: String
     , _score :: Int
-    , _source :: Synset
+    , _source :: Vote
     }
   deriving (Show, Generic)
 
@@ -120,7 +135,7 @@ instance FromJSON Suggestion where
   parseJSON = genericParseJSON customOps
 
 instance FromJSON Pointer
-
+instance FromJSON Vote
 instance FromJSON Document
 
 readJ :: L.ByteString -> Either String Document
