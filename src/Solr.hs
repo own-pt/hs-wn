@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings, DuplicateRecordFields #-}
 
 module Solr where
 
@@ -7,6 +7,23 @@ import qualified Data.ByteString.Lazy as L
 import Data.Either
 import Data.List
 import GHC.Generics
+
+
+data Suggestion =
+  Suggestion
+    { status :: String
+    , user :: String
+    , params :: String
+    , action :: String
+    , stype :: String
+    , vote_score :: Int
+    , sum_votes :: Int
+    , provenance :: String
+    , date :: String
+    , doc_id :: String
+    , doc_type :: String
+    }
+  deriving (Show, Generic)
 
 data Pointer =
   Pointer
@@ -86,9 +103,20 @@ data Document =
     }
   deriving (Show, Generic)
 
-customOps = defaultOptions {rejectUnknownFields = True}
+customOps =
+  defaultOptions
+    { rejectUnknownFields = True
+    , fieldLabelModifier =
+        \x ->
+          if x == "stype"
+            then "type"
+            else x
+    }
 
 instance FromJSON Synset where
+  parseJSON = genericParseJSON customOps
+
+instance FromJSON Suggestion where
   parseJSON = genericParseJSON customOps
 
 instance FromJSON Pointer
