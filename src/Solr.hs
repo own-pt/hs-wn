@@ -22,13 +22,19 @@ data Vote =
 data Suggestion =
   Suggestion
     { status :: String
-    , user :: String
+    , user :: Maybe String
     , params :: String
     , id :: String
     , action :: String
     , stype :: String
-    , vote_score :: Int
-    , sum_votes :: Int
+    , tags :: Maybe [String]
+    , sum_votes :: Maybe Int
+    , vote_score :: Maybe Int    
+    , all_voters :: Maybe [String]
+    , negative_votes :: Maybe [Int]
+    , negative_voters :: Maybe [String]
+    , positive_voters :: Maybe [String]
+    , positive_votes :: Maybe [Int]
     , provenance :: String
     , date :: Integer
     , doc_id :: String
@@ -146,4 +152,29 @@ readVote s = eitherDecode s :: Either String (Document Vote)
 readJL :: (L.ByteString -> b) -> FilePath -> IO [b]
 readJL reader path = do
   content <- L.readFile path
-  return (map reader $ L.split 10 content)
+  return (map reader $ filter (not . L.null) (L.split 10 content))
+
+
+-- experiments
+
+-- do we have any error?
+-- fmap lefts (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
+
+f1 :: [Either String (Document Vote)] -> [Vote]
+f1 = fmap _source . rights
+
+f2 :: [Vote] -> [[Vote]]
+f2 xs = groupBy fg (sortBy fo xs)
+  where
+    fg = \x y -> suggestion_id x == suggestion_id y
+    fo = \x y -> suggestion_id x `compare` suggestion_id y
+
+f3 :: [[Vote]] -> [(String, Integer)]
+f3 = map (\x -> (i x, s x)) 
+  where
+    i = suggestion_id . head 
+    s = sum . map value
+
+g = fmap (f3 . f2 . f1) (readJL readVote "/Users/ar/work/wn/openWordnet-pt/tmp/dump/votes.json")
+
+
