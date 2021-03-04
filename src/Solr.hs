@@ -61,14 +61,19 @@ data Synset =
     , wn30_synsetId :: [String]
     , rdf_type :: [String]
     , gloss_en :: [String]
+    , gloss_pt :: Maybe [String]
     , word_en :: [String]
     , word_pt :: Maybe [String]
+    , example_pt :: Maybe [String]
     , doc_id :: String
+    , wn30_frame :: Maybe [String]
     , wn30_lexicographerFile :: [String]
+    , wn30_similarTo  :: Maybe [String]
     -- relations
     , wn30_en_adjectivePertainsTo :: Maybe [Pointer]
     , wn30_en_adverbPertainsTo :: Maybe [Pointer]
     , wn30_en_antonymOf :: Maybe [Pointer]
+    , wn30_pt_antonymOf :: Maybe [Pointer]
     , wn30_en_attribute :: Maybe [Pointer]
     , wn30_en_causes :: Maybe [Pointer]
     , wn30_en_classifiedByRegion :: Maybe [Pointer]
@@ -91,21 +96,30 @@ data Synset =
     , wn30_en_seeAlso :: Maybe [Pointer]
     , wn30_en_substanceHolonymOf :: Maybe [Pointer]
     , wn30_en_substanceMeronymOf :: Maybe [Pointer]
+
     -- morphosemantic links
     , wn30_en_property :: Maybe [Pointer]
     , wn30_en_result :: Maybe [Pointer]
+    , wn30_pt_result :: Maybe [Pointer]
     , wn30_en_state :: Maybe [Pointer]
+    , wn30_pt_state :: Maybe [Pointer]
     , wn30_en_undergoer :: Maybe [Pointer]
+    , wn30_pt_undergoer :: Maybe [Pointer]
     , wn30_en_uses :: Maybe [Pointer]
+    , wn30_pt_uses :: Maybe [Pointer]
     , wn30_en_vehicle :: Maybe [Pointer]
     , wn30_en_entails :: Maybe [Pointer]
     , wn30_en_event :: Maybe [Pointer]
+    , wn30_pt_event :: Maybe [Pointer]
     , wn30_en_instrument :: Maybe [Pointer]
+    , wn30_pt_instrument :: Maybe [Pointer]
     , wn30_en_location :: Maybe [Pointer]
     , wn30_en_material :: Maybe [Pointer]
     , wn30_en_agent :: Maybe [Pointer]
+    , wn30_pt_agent :: Maybe [Pointer]
     , wn30_en_bodyPart :: Maybe [Pointer]
     , wn30_en_byMeansOf :: Maybe [Pointer]
+    , wn30_pt_byMeansOf :: Maybe [Pointer]
     , wn30_en_destination :: Maybe [Pointer]
     }
   deriving (Show, Generic)
@@ -161,7 +175,7 @@ readJL reader path = do
 -- fmap lefts (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
 
 f1 :: [Either String (Document Vote)] -> [Vote]
-f1 = fmap _source . rights
+f1 = map _source . rights
 
 f2 :: [Vote] -> [[Vote]]
 f2 xs = groupBy fg (sortBy fo xs)
@@ -178,3 +192,24 @@ f3 = map (\x -> (i x, s x))
 g = fmap (f3 . f2 . f1) (readJL readVote "/Users/ar/work/wn/openWordnet-pt/tmp/dump/votes.json")
 
 
+{- atualiza os synsets
+
+-- remover commentatrios, remover `commited` (eq filtrar todas que não
+-- sao commited e estao como new). usar lista da funcao g para filtrar
+-- suggestions com votes >= 2.
+
+c1 :: [Suggestion] -> [Suggestion]
+
+updateSynset :: Synset -> [Suggestion] -> Synset 
+
+c3 :: [Synset] -> [[Suggestion]] -> [(Synset,[Suggestion])]
+
+
+c4 :: [Synset] -> [Suggestion] -> [Synset]
+c4 synsets suggestions = [updateSynset ta tb | (ta, tb) <- re]
+  where
+    sv = (filter fa sugestions)
+    gs = (groupBy fb sv)
+    re = c3 synsets gs
+
+-}
