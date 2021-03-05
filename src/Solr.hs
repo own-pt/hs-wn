@@ -180,9 +180,6 @@ readJL reader path = do
 
 {- UPDATE SYNSETS -}
 
-updateSynset :: Synset -> [Suggestion] -> Synset
-updateSynset sn sgs = sn
-
 f1 :: [Either String (Document a)] -> [a]
 f1 = map _source . rights
 
@@ -235,8 +232,7 @@ c4 synsets suggestions =
   where
     re = c3 synsets suggestions
 
--- 
-
+-- NOTE: compose
 f =
   c4 <$> sy_doc <*> sg_filter
   where
@@ -246,6 +242,30 @@ f =
     sg_doc = fmap (c1 . f1) (readJL readSuggestion "/home/fredson/openWordnet-PT/dump/suggestion.json")
     id_scores = fmap (f3 . f2 . f1) (readJL readVote "/home/fredson/openWordnet-PT/dump/votes.json")
 
+-- NOTE: main rules funcction
+-- NOTE: found actions using: cat path/to/suggestion.json | grep -oP "(?<=(\"action\":))\"[a-z-]+\"" | sort | uniq
+
+-- NOTE: discuss optimal solution
+applySuggestion :: Synset -> Suggestion -> Synset
+applySuggestion sn sg =
+  case (action sg) of
+    "remove-example-pt" -> Synset {example_pt = removeItem (params sg) (example_pt sn)}
+    "remove-gloss-pt" -> Synset {gloss_pt = removeItem (params sg) (gloss_pt sn)}
+    "remove-word-pt" -> Synset {word_pt = removeItem (params sg) (word_pt sn)}
+    "add-example-pt" -> Synset {example_pt = addItem (params sg) (example_pt sn)}
+    "add-gloss-pt" -> Synset {gloss_pt = addItem (params sg) (example_pt sn)}
+    "add-word-pt" -> Synset {word_pt = addItem (params sg) (example_pt sn)}
+    --sn _ -> sn
+  where
+    addItem x Nothing = Just [x]
+    addItem x (Just ys) = Just (x:ys)
+    removeItem x Nothing = Nothing
+    removeItem x (Just ys) = Just (filter (==x) ys)
+
+updateSynset :: Synset -> [Suggestion] -> Synset
+updateSynset sn [] = sn
+updateSynset sn (sg:sgs) =
+  updateSynset (applySuggestion sn sg) sgs
 
 -- do we have any error?
 -- fmap (nub . lefts) (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
