@@ -1,8 +1,13 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings, DuplicateRecordFields,
+  TypeApplications, DataKinds, FlexibleContexts #-}
 
 module Solr where
 
 import Data.Aeson
+import Data.Maybe
+import Data.Generics.Product.Fields
 import qualified Data.ByteString.Lazy as L
 import Data.Either
 import Data.List
@@ -123,6 +128,22 @@ data Synset =
     , wn30_en_destination :: Maybe [Pointer]
     }
   deriving (Show, Generic)
+
+addWord1 :: Synset -> String -> Synset
+addWord1 s w = s {word_pt = words}
+  where
+    words =
+      if isNothing (word_pt s)
+        then Just [w]
+        else fmap (w :) (word_pt s)
+
+addWord2 :: Synset -> String -> Synset
+addWord2 s w = setField @"word_pt" words s
+  where
+    words =
+      if isNothing (word_pt s)
+        then Just [w]
+        else fmap (w :) (word_pt s)
 
 
 -- records do not allow parameters! This is a problem

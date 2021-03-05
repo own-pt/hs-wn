@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9aad13f2ac1751719bddf21f81d2179823d12727654972e9b1448c63c4312bf4
+-- hash: c20ddd2ae0db51583d05d0a0ca541599e9ce4af4dd1c8134db7eb05c4e5dedf6
 
 name:           wn
 version:        0.1.0.0
@@ -37,6 +37,7 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , generic-lens
   default-language: Haskell2010
 
 executable wn-exe
@@ -50,6 +51,7 @@ executable wn-exe
       aeson
     , base >=4.7 && <5
     , bytestring
+    , generic-lens
     , wn
   default-language: Haskell2010
 
@@ -65,5 +67,6 @@ test-suite wn-test
       aeson
     , base >=4.7 && <5
     , bytestring
+    , generic-lens
     , wn
   default-language: Haskell2010
