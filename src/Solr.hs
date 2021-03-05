@@ -219,12 +219,28 @@ c2 ss ids =
     f_ids s = elem (s_id s) ids
 
 -- NOTE: groups suggestions for synset
+-- c3 :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
+-- c3 sns sgs =
+--   [(sn, zips sn sgs) | sn <- sns]
+--   where
+--     zips sn sgs = filter (\sg -> grps sn sg) sgs
+--     grps sn sg = (doc_id sn) == (synset_id sg)
 c3 :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
 c3 sns sgs =
-  [(sn, zips sn sgs) | sn <- sns]
+  group_sns_sgs [] sorted_sns grouped_sgs
   where
-    zips sn sgs = filter (\sg -> grps sn sg) sgs
-    grps sn sg = (doc_id sn) == (synset_id sg)
+    sorted_sns = sortBy compare_sns sns
+    compare_sns x y = compare (doc_id x) (doc_id y)
+    grouped_sgs = groupBy group_sgs (sortBy compare_sgs sgs)
+    group_sgs x y = (synset_id x) == (synset_id y)
+    compare_sgs x y = compare (synset_id x) (synset_id y)
+    group_sns_sgs out [] _ = out
+    group_sns_sgs out ss [] = [(s,[]) | s <- ss] ++ out
+    group_sns_sgs out (s:ss) (sg:sgs) =
+      case (compare (doc_id s) (synset_id (head sg))) of
+        GT -> group_sns_sgs out (s:ss) sgs
+        EQ -> group_sns_sgs ((s,sg):out) ss sgs
+        LT -> group_sns_sgs ((s,[]):out) ss (sg:sgs)
 
 c4 :: [Synset] -> [Suggestion] -> [Synset]
 c4 synsets suggestions =
@@ -236,10 +252,10 @@ c4 synsets suggestions =
 f =
   c4 <$> sy_doc <*> sg_filter
   where
-    id_filter = fmap (c0 2) id_scores
+    id_filter = fmap (c0 1) id_scores
     sg_filter = c2 <$> sg_doc <*> id_filter
     sy_doc = fmap (f1) (readJL readSynset "/home/fredson/openWordnet-PT/dump/wn.json")
-    sg_doc = fmap (c1 . f1) (readJL readSuggestion "/home/fredson/openWordnet-PT/dump/suggestion.json")
+    sg_doc = fmap (c1 . f1) (readJL readSuggestion "/home/fredson/openWordnet-PT/dump/suggestion.json.short")
     id_scores = fmap (f3 . f2 . f1) (readJL readVote "/home/fredson/openWordnet-PT/dump/votes.json")
 
 -- NOTE: main rules funcction
