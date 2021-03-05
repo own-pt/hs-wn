@@ -249,12 +249,12 @@ f =
 applySuggestion :: Synset -> Suggestion -> Synset
 applySuggestion sn sg =
   case (action sg) of
-    "remove-example-pt" -> Synset {example_pt = removeItem (params sg) (example_pt sn)}
-    "remove-gloss-pt" -> Synset {gloss_pt = removeItem (params sg) (gloss_pt sn)}
-    "remove-word-pt" -> Synset {word_pt = removeItem (params sg) (word_pt sn)}
-    "add-example-pt" -> Synset {example_pt = addItem (params sg) (example_pt sn)}
-    "add-gloss-pt" -> Synset {gloss_pt = addItem (params sg) (example_pt sn)}
-    "add-word-pt" -> Synset {word_pt = addItem (params sg) (example_pt sn)}
+    "remove-example-pt" -> sn {example_pt = removeItem (params sg) (example_pt sn)}
+    "remove-gloss-pt" -> sn {gloss_pt = removeItem (params sg) (gloss_pt sn)}
+    "remove-word-pt" -> sn {word_pt = removeItem (params sg) (word_pt sn)}
+    "add-example-pt" -> sn {example_pt = addItem (params sg) (example_pt sn)}
+    "add-gloss-pt" -> sn {gloss_pt = addItem (params sg) (example_pt sn)}
+    "add-word-pt" -> sn {word_pt = addItem (params sg) (example_pt sn)}
     --sn _ -> sn
   where
     addItem x Nothing = Just [x]
@@ -269,3 +269,7 @@ updateSynset sn (sg:sgs) =
 
 -- do we have any error?
 -- fmap (nub . lefts) (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
+
+-- TODO
+-- c0 :: Integer -> [(String, Integer)] -> [(Suggestions, Integer)]
+-- c1 :: [Suggestion, Inteter] -> [Suggestion->Bool] -> [Suggestion]

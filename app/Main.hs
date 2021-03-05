@@ -1,6 +1,9 @@
 module Main where
 
 import Lib
+import Solr
 
 main :: IO ()
-main = someFunc
+main = do
+  a <- show <$> f
+  putStrLn a
