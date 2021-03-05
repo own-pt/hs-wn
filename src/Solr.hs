@@ -155,6 +155,8 @@ customOps =
           label -> label
     }
 
+{- READING DOCUMENTS -}
+
 instance FromJSON Synset where
   parseJSON = genericParseJSON customOps
 
@@ -176,12 +178,12 @@ readJL reader path = do
   return (map reader $ filter (not . L.null) (L.split 10 content))
 
 
--- experiments
+{- UPDATE SYNSETS -}
 
--- do we have any error?
--- fmap (nub . lefts) (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
+updateSynset :: Synset -> [Suggestion] -> Synset
+updateSynset sn sgs = sn
 
-f1 :: [Either String (Document Vote)] -> [Vote]
+f1 :: [Either String (Document a)] -> [a]
 f1 = map _source . rights
 
 f2 :: [Vote] -> [[Vote]]
@@ -197,14 +199,6 @@ f3 =
   where
     i = suggestion_id . head 
     s = sum . map value
-
---g = fmap (f3 . f2 . f1) (readJL readVote "/Users/ar/work/wn/openWordnet-pt/tmp/dump/votes.json")
-g = fmap (f3 . f2 . f1) (readJL readVote "/home/fredson/openWordnet-PT/dump/votes.json")
-                        
-
-{- updates the synsets given some rules -}
-updateSynset :: Synset -> [Suggestion] -> Synset
-updateSynset sn sgs = sn
 
 -- NOTE: simple acception/rejection rule
 -- NOTE: filters ids with score >= treshold
@@ -241,5 +235,17 @@ c4 synsets suggestions =
   where
     re = c3 synsets suggestions
 
--- vamos rodar tudo junto
-f = []
+-- 
+
+f =
+  c4 <$> sy_doc <*> sg_filter
+  where
+    id_filter = fmap (c0 2) id_scores
+    sg_filter = c2 <$> sg_doc <*> id_filter
+    sy_doc = fmap (f1) (readJL readSynset "/home/fredson/openWordnet-PT/dump/wn.json")
+    sg_doc = fmap (c1 . f1) (readJL readSuggestion "/home/fredson/openWordnet-PT/dump/suggestion.json")
+    id_scores = fmap (f3 . f2 . f1) (readJL readVote "/home/fredson/openWordnet-PT/dump/votes.json")
+
+
+-- do we have any error?
+-- fmap (nub . lefts) (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
