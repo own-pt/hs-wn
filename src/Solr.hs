@@ -11,7 +11,7 @@ import GHC.Generics
 
 data Vote =
   Vote
-    { id :: String
+    { v_id :: String
     , date :: Integer
     , suggestion_id :: String
     , user :: String
@@ -24,7 +24,7 @@ data Suggestion =
     { status :: String
     , user :: Maybe String
     , params :: String
-    , id :: String
+    , s_id :: String
     , action :: String
     , stype :: String
     , tags :: Maybe [String]
@@ -37,7 +37,7 @@ data Suggestion =
     , positive_votes :: Maybe [Int]
     , provenance :: String
     , date :: Integer
-    , doc_id :: String
+    , synset_id :: String
     , doc_type :: String
     }
   deriving (Show, Generic)
@@ -99,6 +99,7 @@ data Synset =
 
     -- morphosemantic links
     , wn30_en_property :: Maybe [Pointer]
+    , wn30_pt_property :: Maybe [Pointer]
     , wn30_en_result :: Maybe [Pointer]
     , wn30_pt_result :: Maybe [Pointer]
     , wn30_en_state :: Maybe [Pointer]
@@ -108,16 +109,20 @@ data Synset =
     , wn30_en_uses :: Maybe [Pointer]
     , wn30_pt_uses :: Maybe [Pointer]
     , wn30_en_vehicle :: Maybe [Pointer]
+    , wn30_pt_vehicle :: Maybe [Pointer]
     , wn30_en_entails :: Maybe [Pointer]
     , wn30_en_event :: Maybe [Pointer]
     , wn30_pt_event :: Maybe [Pointer]
     , wn30_en_instrument :: Maybe [Pointer]
     , wn30_pt_instrument :: Maybe [Pointer]
     , wn30_en_location :: Maybe [Pointer]
+    , wn30_pt_location :: Maybe [Pointer]
     , wn30_en_material :: Maybe [Pointer]
+    , wn30_pt_material :: Maybe [Pointer]
     , wn30_en_agent :: Maybe [Pointer]
     , wn30_pt_agent :: Maybe [Pointer]
     , wn30_en_bodyPart :: Maybe [Pointer]
+    , wn30_pt_bodyPart :: Maybe [Pointer]
     , wn30_en_byMeansOf :: Maybe [Pointer]
     , wn30_pt_byMeansOf :: Maybe [Pointer]
     , wn30_en_destination :: Maybe [Pointer]
@@ -142,10 +147,12 @@ customOps =
   defaultOptions
     { rejectUnknownFields = True
     , fieldLabelModifier =
-        \x ->
-          if x == "stype"
-            then "type"
-            else x
+        \label -> case label of
+          "synset_id" -> "doc_id"
+          "stype" -> "type"
+          "v_id" -> "id"
+          "s_id" -> "id"
+          label -> label
     }
 
 instance FromJSON Synset where
@@ -153,9 +160,9 @@ instance FromJSON Synset where
 
 instance FromJSON Suggestion where
   parseJSON = genericParseJSON customOps
-
 instance FromJSON Pointer
-instance FromJSON Vote
+instance FromJSON Vote where
+  parseJSON = genericParseJSON customOps
 
 instance FromJSON a => FromJSON (Document a)
 
@@ -172,7 +179,7 @@ readJL reader path = do
 -- experiments
 
 -- do we have any error?
--- fmap lefts (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
+-- fmap (nub . lefts) (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")
 
 f1 :: [Either String (Document Vote)] -> [Vote]
 f1 = map _source . rights
@@ -183,33 +190,56 @@ f2 xs = groupBy fg (sortBy fo xs)
     fg = \x y -> suggestion_id x == suggestion_id y
     fo = \x y -> suggestion_id x `compare` suggestion_id y
 
+-- NOTE: lists (suggestion id, Score)
 f3 :: [[Vote]] -> [(String, Integer)]
-f3 = map (\x -> (i x, s x)) 
+f3 =
+  map (\x -> (i x, s x)) 
   where
     i = suggestion_id . head 
     s = sum . map value
 
-g = fmap (f3 . f2 . f1) (readJL readVote "/Users/ar/work/wn/openWordnet-pt/tmp/dump/votes.json")
+--g = fmap (f3 . f2 . f1) (readJL readVote "/Users/ar/work/wn/openWordnet-pt/tmp/dump/votes.json")
+g = fmap (f3 . f2 . f1) (readJL readVote "/home/fredson/openWordnet-PT/dump/votes.json")
+                        
 
+{- updates the synsets given some rules -}
+updateSynset :: Synset -> [Suggestion] -> Synset
+updateSynset sn sgs = sn
 
-{- atualiza os synsets
+-- NOTE: simple acception/rejection rule
+-- NOTE: filters ids with score >= treshold
+c0 :: Integer -> [(String, Integer)] -> [String]
+c0 th ids_score =
+  [id | (id, sc) <- ids_score, sc >= th]
 
--- remover commentatrios, remover `commited` (eq filtrar todas que não
--- sao commited e estao como new). usar lista da funcao g para filtrar
--- suggestions com votes >= 2.
-
+-- NOTE: remove comments and commited
 c1 :: [Suggestion] -> [Suggestion]
+c1 ss =
+  filter (\s -> (f_status s && not (f_comment s))) ss
+  where
+    f_status s = status s == "new"
+    f_comment s = action s == "comment"
 
-updateSynset :: Synset -> [Suggestion] -> Synset 
+-- NOTE: filters suggestion with valid ids
+c2 :: [Suggestion] -> [String] -> [Suggestion]
+c2 ss ids =
+  filter f_ids ss
+  where
+    f_ids s = elem (s_id s) ids
 
-c3 :: [Synset] -> [[Suggestion]] -> [(Synset,[Suggestion])]
-
+-- NOTE: groups suggestions for synset
+c3 :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
+c3 sns sgs =
+  [(sn, zips sn sgs) | sn <- sns]
+  where
+    zips sn sgs = filter (\sg -> grps sn sg) sgs
+    grps sn sg = (doc_id sn) == (synset_id sg)
 
 c4 :: [Synset] -> [Suggestion] -> [Synset]
-c4 synsets suggestions = [updateSynset ta tb | (ta, tb) <- re]
+c4 synsets suggestions =
+  [updateSynset ta tb | (ta, tb) <- re]
   where
-    sv = (filter fa sugestions)
-    gs = (groupBy fb sv)
-    re = c3 synsets gs
+    re = c3 synsets suggestions
 
--}
+-- vamos rodar tudo junto
+f = []
