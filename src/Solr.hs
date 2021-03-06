@@ -2,11 +2,12 @@
 
 module Solr where
 
-import Data.Aeson
-import qualified Data.ByteString.Lazy as L
-import Data.Either
 import Data.List
+import Data.Aeson
+import Data.Maybe
+import Data.Either
 import GHC.Generics
+import qualified Data.ByteString.Lazy as L
 
 
 data Vote =
