@@ -14,7 +14,7 @@ data Vote =
     { v_id :: String
     , date :: Integer
     , suggestion_id :: String
-    , user :: String
+    , v_user :: String
     , value :: Integer
     }
   deriving (Show, Generic)
@@ -22,7 +22,7 @@ data Vote =
 data Suggestion =
   Suggestion
     { status :: String
-    , user :: Maybe String
+    , s_user :: Maybe String
     , params :: String
     , s_id :: String
     , action :: String
@@ -130,9 +130,6 @@ data Synset =
   deriving (Show, Generic)
 
 
--- records do not allow parameters! This is a problem
--- here. alternatives? a Document wraps Synset, Suggestion, Vote etc.
-
 data Document a =
   Document
     { _index :: String
@@ -150,6 +147,8 @@ customOps =
         \label -> case label of
           "synset_id" -> "doc_id"
           "stype" -> "type"
+          "v_user" -> "user"
+          "s_user" -> "user"
           "v_id" -> "id"
           "s_id" -> "id"
           label -> label
@@ -221,10 +220,11 @@ c0 th ids_score =
 -- NOTE: remove comments and commited
 c1 :: [Suggestion] -> [Suggestion]
 c1 ss =
-  filter (\s -> (f_status s && not (f_comment s))) ss
+  filter (\s -> and $ map ($ s) [f_user, f_status, f_comment]) ss
   where
+    f_user s = elem (s_user s) [Just "arademaker", Just "vcvpaiva"] 
     f_status s = status s == "new"
-    f_comment s = action s == "comment"
+    f_comment s = action s /= "comment"
 
 -- NOTE: filters suggestion with valid ids
 c2 :: [Suggestion] -> [String] -> [Suggestion]
@@ -285,18 +285,18 @@ f =
 applySuggestion :: Synset -> Suggestion -> Synset
 applySuggestion sn sg =
   case (action sg) of
-    "remove-example-pt" -> sn {example_pt = removeItem (params sg) (example_pt sn)}
-    "remove-gloss-pt" -> sn {gloss_pt = removeItem (params sg) (gloss_pt sn)}
-    "remove-word-pt" -> sn {word_pt = removeItem (params sg) (word_pt sn)}
-    "add-example-pt" -> sn {example_pt = addItem (params sg) (example_pt sn)}
-    "add-gloss-pt" -> sn {gloss_pt = addItem (params sg) (example_pt sn)}
-    "add-word-pt" -> sn {word_pt = addItem (params sg) (example_pt sn)}
+    "remove-example-pt" -> sn {example_pt = removeItem (params sg) (example_pt sn)} --ok
+    "remove-gloss-pt" -> sn {gloss_pt = removeItem (params sg) (gloss_pt sn)} --ok
+    "remove-word-pt" -> sn {word_pt = removeItem (params sg) (word_pt sn)} --ok
+    "add-example-pt" -> sn {example_pt = addItem (params sg) (example_pt sn)} --ok
+    "add-gloss-pt" -> sn {gloss_pt = addItem (params sg) (gloss_pt sn)} --ok
+    "add-word-pt" -> sn {word_pt = addItem (params sg) (word_pt sn)} --ok
     --sn _ -> sn
   where
     addItem x Nothing = Just [x]
     addItem x (Just ys) = Just (x:ys)
     removeItem x Nothing = Nothing
-    removeItem x (Just ys) = Just (filter (==x) ys)
+    removeItem x (Just ys) = Just (filter (/=x) ys)
 
 updateSynset :: Synset -> [Suggestion] -> Synset
 updateSynset sn [] = sn
@@ -309,3 +309,5 @@ updateSynset sn (sg:sgs) =
 -- TODO
 -- c0 :: Integer -> [(String, Integer)] -> [(Suggestions, Integer)]
 -- c1 :: [Suggestion, Inteter] -> [Suggestion->Bool] -> [Suggestion]
+
+-- on removeElement, when list is [], put Nothing
