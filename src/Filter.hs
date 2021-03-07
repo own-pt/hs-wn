@@ -11,7 +11,7 @@ file with frequencies generated using on the directory:
 awk '$0 ~ /^[0-9]/ {print $3,$4}' *.conllu | sort | uniq -c | sort -nr
 -}
 
-module Process where
+module Filter where
 
 import Solr
 import Query
@@ -55,16 +55,3 @@ frequencyFilter trashold spointers frequencies =
         EQ -> if freq fr >= th
               then filterPointers ((sp, freq fr):out) th sps (fr:frs)
               else filterPointers out th sps (fr:frs)
-
--- try all
-w n = sortBy (\x y -> compare (snd y) (snd x)) <$> (frequencyFilter n <$> h <*> g)
-h = collectRelationsSenses <$> f
-g = (parseFrequencies) <$> (getFrequencies "/home/fredson/wn/dhbb/frequencies")
-f =
-  c4 <$> sy_doc <*> sg_filter
-  where
-    id_filter = fmap (c0 1) id_scores
-    sg_filter = c2 <$> sg_doc <*> id_filter
-    sy_doc = fmap (f1) (readJL readSynset "/home/fredson/wn/dump/wn.json")
-    sg_doc = fmap (c1 . f1) (readJL readSuggestion "/home/fredson/wn/dump/suggestion.json")
-    id_scores = fmap (f3 . f2 . f1) (readJL readVote "/home/fredson/wn/dump/votes.json")

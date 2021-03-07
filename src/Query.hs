@@ -21,7 +21,9 @@ see: github.com/NLP-CISUC/PT-LexicalSemantics/blob/master/OWN-PT/query.sparql
 
 data SPointer = SPointer
   { wordA :: Sense
-  , wordB :: Sense
+  , wordB :: [Sense]
+  , synsA :: String
+  , synsB :: String
   , typeA :: RDFType
   , typeB :: RDFType
   , relation :: Relation
@@ -33,23 +35,21 @@ instance Eq SPointer where
 instance Ord SPointer where
   (<=) x y = (<=) (sPointerToTuple x) (sPointerToTuple y)
 
-sPointerToTuple :: SPointer -> (Sense,Sense,RDFType,RDFType,Relation)
-sPointerToTuple (SPointer a b ta tb rel) = (a,b,ta,tb,rel)
 
-tupleToSPointer :: (Sense,Sense,RDFType,RDFType,Relation) -> SPointer
-tupleToSPointer (a,b,ta,tb,rel) = (SPointer a b ta tb rel)
+sPointerToTuple (SPointer a bs sa sb ta tb rel) = (a,bs,sa,sb,ta,tb,rel)
+tupleToSPointer (a,bs,sa,sb,ta,tb,rel) = (SPointer a bs sa sb ta tb rel)
 
 collectRelationsSenses :: [Synset] -> [SPointer]
 collectRelationsSenses synsets =
-  [ SPointer (map toLower a) (map toLower b) ta tb (pointer p)
+  [ SPointer a (bs synB p) (doc_id synA) (doc_id synB) ta tb (pointer p)
   | (synA,p,synB) <- collectPointersSynsets synsets
   , a <- choseSenseWords synA (target_word p)
-  , b <- choseSenseWords synB (target_word p)
   , ta <- rdf_type synA
   , tb <- rdf_type synB]
-  where
-    choseSenseWords synX Nothing = fromMaybe [] (word_pt synX)
-    choseSenseWords synX word = [fromJust word]
+   where
+    bs synX p = choseSenseWords synX (target_word p)
+    choseSenseWords synX Nothing = map (map toLower) $ fromMaybe [] (word_pt synX)
+    choseSenseWords synX word = map (map toLower) $ [fromJust word]
   
   
 collectPointersSynsets :: [Synset] -> [(Synset, Pointer, Synset)]
