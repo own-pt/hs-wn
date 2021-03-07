@@ -19,10 +19,29 @@ from portuguese related to synsets in english that sustain a relation ?rel
 see: github.com/NLP-CISUC/PT-LexicalSemantics/blob/master/OWN-PT/query.sparql
 -}
 
+data SPointer = SPointer
+  { wordA :: Sense
+  , wordB :: Sense
+  , typeA :: RDFType
+  , typeB :: RDFType
+  , relation :: Relation
+  } deriving (Show)
 
-collectRelationsSenses :: [Synset] -> [(Sense, RDFType, Sense, RDFType, Relation)]
+instance Eq SPointer where
+  (==) x y = (==) (sPointerToTuple x) (sPointerToTuple y)
+
+instance Ord SPointer where
+  (<=) x y = (<=) (sPointerToTuple x) (sPointerToTuple y)
+
+sPointerToTuple :: SPointer -> (Sense,Sense,RDFType,RDFType,Relation)
+sPointerToTuple (SPointer a b ta tb rel) = (a,b,ta,tb,rel)
+
+tupleToSPointer :: (Sense,Sense,RDFType,RDFType,Relation) -> SPointer
+tupleToSPointer (a,b,ta,tb,rel) = (SPointer a b ta tb rel)
+
+collectRelationsSenses :: [Synset] -> [SPointer]
 collectRelationsSenses synsets =
-  [ (map toLower a, ta, map toLower b, tb, pointer p)
+  [ SPointer (map toLower a) (map toLower b) ta tb (pointer p)
   | (synA,p,synB) <- collectPointersSynsets synsets
   , a <- choseSenseWords synA (target_word p)
   , b <- choseSenseWords synB (target_word p)
