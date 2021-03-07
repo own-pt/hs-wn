@@ -81,17 +81,6 @@ c4 synsets suggestions =
   where
     re = c3 synsets suggestions
 
--- NOTE: compose
--- f = fmap (f1) (readJL readSynset "/home/fredson/openWordnet-PT/dump/wn.json")
-f =
-  c4 <$> sy_doc <*> sg_filter
-  where
-    id_filter = fmap (c0 1) id_scores
-    sg_filter = c2 <$> sg_doc <*> id_filter
-    sy_doc = fmap (f1) (readJL readSynset "/home/fredson/openWordnet-PT/dump/wn.json")
-    sg_doc = fmap (c1 . f1) (readJL readSuggestion "/home/fredson/openWordnet-PT/dump/suggestion.json")
-    id_scores = fmap (f3 . f2 . f1) (readJL readVote "/home/fredson/openWordnet-PT/dump/votes.json")
-
 -- NOTE: main rules funcction
 -- NOTE: found actions using: cat path/to/suggestion.json | grep -oP "(?<=(\"action\":))\"[a-z-]+\"" | sort | uniq
 
