@@ -45,7 +45,7 @@ frequencyFilter :: Integer -> [SPointer] -> [Frequency] -> [(SPointer, Integer)]
 frequencyFilter trashold spointers frequencies =
   filterPointers [] trashold (sort spointers) (sortBy f frequencies)
   where
-    f x y = (<=) (word x) (word y)
+    f x y = compare (word x) (word y)
     filterPointers out th [] frs = out
     filterPointers out th sps [] = out
     filterPointers out th (sp:sps) (fr:frs) =
@@ -57,7 +57,7 @@ frequencyFilter trashold spointers frequencies =
               else filterPointers out th sps (fr:frs)
 
 -- try all
-w n = frequencyFilter n <$> h <*> g
+w n = sortBy (\x y -> compare (snd y) (snd x)) <$> (frequencyFilter n <$> h <*> g)
 h = collectRelationsSenses <$> f
 g = (parseFrequencies) <$> (getFrequencies "/home/fredson/wn/dhbb/frequencies")
 f =
