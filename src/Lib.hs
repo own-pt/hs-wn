@@ -1,6 +1,11 @@
-module Lib
-    ( someFunc
-    ) where
+module Lib where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import Solr
+import Query
+import Update
+import Process
+
+libFunc :: IO ()
+libFunc = do
+  out <- (show . collectRelationsSenses) <$> f
+  putStrLn out
