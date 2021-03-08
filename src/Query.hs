@@ -21,11 +21,11 @@ see: github.com/NLP-CISUC/PT-LexicalSemantics/blob/master/OWN-PT/query.sparql
 
 data SPointer = SPointer
   { wordA :: Sense
-  , wordB :: [Sense]
-  , synsA :: String
-  , synsB :: String
+  , wordB :: Sense
   , typeA :: RDFType
   , typeB :: RDFType
+  -- , docIdA :: String
+  -- , docIdB :: String
   , relation :: Relation
   } deriving (Show)
 
@@ -35,22 +35,34 @@ instance Eq SPointer where
 instance Ord SPointer where
   (<=) x y = (<=) (sPointerToTuple x) (sPointerToTuple y)
 
+sPointerToTuple (SPointer a b ta tb rel) = (a,b,ta,tb,rel)
+tupleToSPointer (a,b,ta,tb,rel) = (SPointer a b ta tb rel)
 
-sPointerToTuple (SPointer a bs sa sb ta tb rel) = (a,bs,sa,sb,ta,tb,rel)
-tupleToSPointer (a,bs,sa,sb,ta,tb,rel) = (SPointer a bs sa sb ta tb rel)
 
+groupSensesWordB :: [SPointer] -> [SPointer]
+groupSensesWordB spointers =
+  (map g3 . groupBy g2 . sortBy g1) spointers
+  where
+    g x = (wordA x,relation x,typeA x, typeB x)
+    g1 x y = compare (g x) (g y)
+    g2 x y = (==) (g x) (g y)
+    g3 sps = (head sps) {wordB = intercalate "/" (map wordB sps)}
+
+    
 collectRelationsSenses :: [Synset] -> [SPointer]
 collectRelationsSenses synsets =
-  [ SPointer a (bs synB p) (doc_id synA) (doc_id synB) ta tb (pointer p)
+  [ SPointer (map toLowerSub a) (map toLowerSub b) ta tb (pointer p)
   | (synA,p,synB) <- collectPointersSynsets synsets
-  , a <- choseSenseWords synA (target_word p)
+  , a <- choseSenseWords synA (source_word p)
+  , b <- choseSenseWords synB (target_word p)
   , ta <- rdf_type synA
   , tb <- rdf_type synB]
    where
-    bs synX p = choseSenseWords synX (target_word p)
-    choseSenseWords synX Nothing = map (map toLower) $ fromMaybe [] (word_pt synX)
-    choseSenseWords synX word = map (map toLower) $ [fromJust word]
-  
+    toLowerSub = (subs ' ' '_') . toLower
+    subs a b c = if c == a then b else c
+    choseSenseWords synX Nothing = fromMaybe [] (word_pt synX)
+    choseSenseWords synX word = [fromJust word]
+
   
 collectPointersSynsets :: [Synset] -> [(Synset, Pointer, Synset)]
 collectPointersSynsets synsets =

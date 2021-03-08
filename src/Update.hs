@@ -54,12 +54,6 @@ c2 ss is =
         EQ -> filter_suggestions (s:out) ss is
 
 -- NOTE: groups suggestions for synset
--- c3 :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
--- c3 sns sgs =
---   [(sn, zips sn sgs) | sn <- sns]
---   where
---     zips sn sgs = filter (\sg -> grps sn sg) sgs
---     grps sn sg = (doc_id sn) == (synset_id sg)
 c3 :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
 c3 sns sgs =
   group_sns_sgs [] (sortBy c_sns sns) (groupBy g_sgs (sortBy c_sgs sgs))
@@ -81,19 +75,19 @@ c4 synsets suggestions =
   where
     re = c3 synsets suggestions
 
--- NOTE: main rules funcction
+-- NOTE: main rules function
 -- NOTE: found actions using: cat path/to/suggestion.json | grep -oP "(?<=(\"action\":))\"[a-z-]+\"" | sort | uniq
 
 -- NOTE: discuss optimal solution
 applySuggestion :: Synset -> Suggestion -> Synset
 applySuggestion sn sg =
   case (action sg) of
-    "remove-example-pt" -> sn {example_pt = removeItem (params sg) (example_pt sn)} --ok
-    "remove-gloss-pt" -> sn {gloss_pt = removeItem (params sg) (gloss_pt sn)} --ok
-    "remove-word-pt" -> sn {word_pt = removeItem (params sg) (word_pt sn)} --ok
-    "add-example-pt" -> sn {example_pt = addItem (params sg) (example_pt sn)} --ok
-    "add-gloss-pt" -> sn {gloss_pt = addItem (params sg) (gloss_pt sn)} --ok
-    "add-word-pt" -> sn {word_pt = addItem (params sg) (word_pt sn)} --ok
+    "remove-example-pt" -> sn {example_pt = removeItem (params sg) (example_pt sn)}
+    "remove-gloss-pt" -> sn {gloss_pt = removeItem (params sg) (gloss_pt sn)}
+    "remove-word-pt" -> sn {word_pt = removeItem (params sg) (word_pt sn)}
+    "add-example-pt" -> sn {example_pt = addItem (params sg) (example_pt sn)}
+    "add-gloss-pt" -> sn {gloss_pt = addItem (params sg) (gloss_pt sn)}
+    "add-word-pt" -> sn {word_pt = addItem (params sg) (word_pt sn)}
     --sn _ -> sn
   where
     addItem x Nothing = Just [x]

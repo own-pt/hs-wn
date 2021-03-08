@@ -4,6 +4,7 @@ import Solr
 import Query
 import Filter
 import Update
+import Execute
 
 import Data.List
 
@@ -16,9 +17,10 @@ import System.Environment
 main :: IO ()
 main = getArgs >>= parse
 
-{- deals with CLI -}
+
+{- Command Line Interface -}
 parse ["-h"] = usage >> exitSuccess
-parse input  = run input >> exitSuccess
+parse input  = apply input >> exitSuccess
 
 usage = putStrLn "usage: [-h] pathSyns pathSugg pathVote pathFreq trashold pathOut\
                  \\n\tpathSyns - path to wn.json\
@@ -27,42 +29,25 @@ usage = putStrLn "usage: [-h] pathSyns pathSugg pathVote pathFreq trashold pathO
                  \\n\tpathFreq - path to frequencies\
                  \\n\ttrashold - minimun acceptable fequency\
                  \\n\tpathOut - path to output folder"
-        
-run [] = usage
-run [pathSyns,pathSugg,pathVote,pathFreq,trashold,pathOut] =
-  (groupBy f . sortBy g) <$> synsets >>= (mapM_ $ putToFile pathOut)
+
+
+apply [] = usage
+apply [pathSyns,pathSugg,pathVote,pathFreq,trashold,pathOut] =
+  (groupBy f . sortBy g) <$> synsets >>= (mapM_ $ save pathOut)
   where
     f x y = (relation x, typeA x,typeB x) == (relation y, typeA y,typeB y)
     g x y = compare (relation x, typeA x,typeB x) (relation y, typeA y,typeB y)
     synsets = processSynsets (read trashold :: Integer) pathSyns pathSugg pathVote pathFreq
-run inputs = usage
+apply inputs = usage
 
 
-putToFile :: FilePath -> [SPointer] -> IO ()
-putToFile pathOut spointers = do
+save :: FilePath -> [SPointer] -> IO ()
+save pathOut spointers = do
   createDirectoryIfMissing True pathOut
   writeFile filename output 
   where
     first = head spointers
     output = (intercalate "\n" $ map showOut spointers)
+    showOut spointer = (wordA spointer) ++ "\t" ++ (wordB spointer)
     filename = pathOut++"/"++(relation first)++"-"++(typeA first)++"-"++(typeB first)++".txt"
-    showOut spointer = (wordA spointer) ++ "\t" ++ (intercalate "/" $ wordB spointer)
 
-{- runs the update task -}
-processSynsets :: Integer -> FilePath -> FilePath -> FilePath -> FilePath -> IO [SPointer]
-processSynsets trashold pathSyns pathSugg pathVote pathFreq =
-  (filter g . map fst . sortBy f) <$> filtered
-  where
-    g x = (length $ wordB x) > 0
-    f x y = compare (snd y) (snd x)
-    filtered = frequencyFilter trashold <$> (filteredSyns pathSyns pathSugg pathVote) <*> (filteredFreq pathFreq)
-
-filteredFreq pathFreq = (parseFrequencies) <$> (getFrequencies pathFreq)
-filteredSyns pathSyns pathSugg pathVote =
-  collectRelationsSenses <$> (c4 <$> synsDocs <*> suggFilter)
-  where
-    idFilter = fmap (c0 1) scoreIds
-    suggFilter = c2 <$> suggDocs <*> idFilter
-    synsDocs = fmap (f1) (readJL readSynset pathSyns)
-    suggDocs = fmap (c1 . f1) (readJL readSuggestion pathSugg)
-    scoreIds = fmap (f3 . f2 . f1) (readJL readVote pathVote)
