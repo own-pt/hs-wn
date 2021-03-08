@@ -9,7 +9,7 @@ import Data.Char
 import Data.Maybe
 
 {-
-The attemp is to group elements of form (?a,?ta,?b,?tb,?rel) given synsets
+The attemp is to group elements of form (?a,?b,?ta,?tb,?rel) given synsets
 from portuguese related to synsets in english that sustain a relation ?rel
 
  - ?a and ?b are word/lexicalform
@@ -43,14 +43,19 @@ groupSensesWordB :: [SPointer] -> [SPointer]
 groupSensesWordB spointers =
   (map g3 . groupBy g2 . sortBy g1) spointers
   where
-    g x = (wordA x,relation x,typeA x, typeB x)
+    g x = (wordA x, relation x, typeA x, typeB x)
     g1 x y = compare (g x) (g y)
     g2 x y = (==) (g x) (g y)
-    g3 sps = (head sps) {wordB = intercalate "/" (map wordB sps)}
+    first = head spointers
+    source = wordA first
+    g3 spointers = first {wordB = group_words spointers}
+    dsource source targets = filter (/=source) targets
+    dduplicates spointers =  (map head . group . sort) spointers
+    group_words spointers = (intercalate "/" . dsource source . dduplicates . map wordB) spointers
 
     
-collectRelationsSenses :: [Synset] -> [SPointer]
-collectRelationsSenses synsets =
+collectSensePointers :: [Synset] -> [SPointer]
+collectSensePointers synsets =
   [ SPointer (map toLowerSub a) (map toLowerSub b) ta tb (pointer p)
   | (synA,p,synB) <- collectPointersSynsets synsets
   , a <- choseSenseWords synA (source_word p)

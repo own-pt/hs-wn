@@ -174,6 +174,7 @@ instance Eq Suggestion where
 instance Ord Suggestion where
   (<=) x y = (<=) (s_id x) (s_id y)
 
+
 {- READING DOCUMENTS -}
 
 instance FromJSON Synset where
@@ -195,6 +196,3 @@ readJL :: (L.ByteString -> b) -> FilePath -> IO [b]
 readJL reader path = do
   content <- L.readFile path
   return (map reader $ filter (not . L.null) (L.split 10 content))
-
--- do we have any error?
--- fmap (nub . lefts) (readJL readVote "/Users/ar/work/wn/openWordnet-PT/tmp/dump/votes.json")

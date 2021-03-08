@@ -25,12 +25,18 @@ data Frequency = Frequency
   -- , pos :: String
   } deriving (Show)
 
-getFrequencies :: FilePath -> IO String
-getFrequencies path = do
+
+getFrequencies :: FilePath -> IO [Frequency]
+getFrequencies path =
+  parseFrequencies <$> getFrequenciesText path
+
+
+getFrequenciesText :: FilePath -> IO String
+getFrequenciesText path = do
   file <- readFile path
   return file
 
--- supose files like: FREQ WORD
+
 parseFrequency :: [String] -> Frequency
 parseFrequency (f:w:_) = Frequency (read f :: Integer) w
 
@@ -40,9 +46,8 @@ parseFrequencies input =
   (map parseFrequency . map words . lines) $ input
 
 
-{- Filtering -}
-frequencyFilter :: Integer -> [SPointer] -> [Frequency] -> [(SPointer, Integer)]
-frequencyFilter trashold spointers frequencies =
+filterByFrequency :: Integer -> [SPointer] -> [Frequency] -> [(SPointer, Integer)]
+filterByFrequency trashold spointers frequencies =
   filterPointers [] trashold (sort spointers) (sortBy f frequencies)
   where
     f x y = compare (word x) (word y)
@@ -53,5 +58,5 @@ frequencyFilter trashold spointers frequencies =
         LT -> filterPointers out th sps (fr:frs)
         GT -> filterPointers out th (sp:sps) frs
         EQ -> if freq fr >= th
-              then filterPointers ((sp, freq fr):out) th sps (fr:frs)
+              then filterPointers ((sp,freq fr):out) th sps (fr:frs)
               else filterPointers out th sps (fr:frs)

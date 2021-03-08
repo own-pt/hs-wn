@@ -9,23 +9,24 @@ import Update
 
 import Data.List
 
--- NOTE: filters and sorts by frequency and returns the SensePointers
+
 processSynsets :: Integer -> FilePath -> FilePath -> FilePath -> FilePath -> IO [SPointer]
-processSynsets trashold pathSyns pathSugg pathVote pathFreq =
-  (map fst . sortBy f) <$> filtered
+processSynsets trashold path_syns path_sugg path_vote path_freq =
+  (map fst . sortBy f) <$> filteredSensePointersByFrequency
   where
     f x y = compare (snd y) (snd x)
-    filtered = frequencyFilter trashold <$> (filteredSens pathSyns pathSugg pathVote) <*> (filteredFreq pathFreq)
+    frequencies = getFrequencies path_freq
+    filteredSensePointers = filterSensePointers path_syns path_sugg path_vote
+    filteredSensePointersByFrequency = filterByFrequency trashold <$> filteredSensePointers <*> frequencies
+    
 
-filteredFreq :: FilePath -> IO [Frequency]
-filteredFreq pathFreq = (parseFrequencies) <$> (getFrequencies pathFreq)
-
-filteredSens :: [Char] -> [Char] -> [Char] -> IO [SPointer]
-filteredSens pathSyns pathSugg pathVote =
-  (groupSensesWordB . collectRelationsSenses) <$> (c4 <$> synsDocs <*> suggFilter)
+filterSensePointers :: [Char] -> [Char] -> [Char] -> IO [SPointer]
+filterSensePointers path_syns path_sugg path_vote =
+  (groupSensesWordB . collectSensePointers) <$> (updateSynsets <$> synsets <*> filtered_suggestions)
   where
-    idFilter = fmap (c0 1) scoreIds
-    suggFilter = c2 <$> suggDocs <*> idFilter
-    synsDocs = fmap (f1) (readJL readSynset pathSyns)
-    suggDocs = fmap (c1 . f1) (readJL readSuggestion pathSugg)
-    scoreIds = fmap (f3 . f2 . f1) (readJL readVote pathVote)
+    synsets = fmap (sourcesFromDocs) (readJL readSynset path_syns)
+    -- filtered suggestions
+    scored_suggestion_ids = fmap (getSuggestionIdScores . groupVotes . sourcesFromDocs) (readJL readVote path_vote)
+    filtered_suggestion_ids = fmap (filterSuggestionIdsByScore 1) scored_suggestion_ids
+    filtered_suggestions_by_rules = fmap (filterSuggestionsByRules . sourcesFromDocs)  (readJL readSuggestion path_sugg)
+    filtered_suggestions = filterSuggestions <$> filtered_suggestions_by_rules <*> filtered_suggestion_ids
