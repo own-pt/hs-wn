@@ -13,28 +13,16 @@ awk '$0 ~ /^[0-9]/ {print $3,$4}' *.conllu | sort | uniq -c | sort -nr
 
 module Filter where
 
-import Solr
-import Query
-import Update
-import Data.List
-import Text.ParserCombinators.ReadP
+import Query ( SPointer(wordA) )
+import Data.List ( sortBy, sort )
 
 data Frequency = Frequency
   { freq :: Integer
   , word :: String
-  -- , pos :: String
   } deriving (Show)
 
-
-getFrequencies :: FilePath -> IO [Frequency]
-getFrequencies path =
-  parseFrequencies <$> getFrequenciesText path
-
-
-getFrequenciesText :: FilePath -> IO String
-getFrequenciesText path = do
-  file <- readFile path
-  return file
+getFrequencies :: FilePath -> IO String
+getFrequencies = readFile
 
 
 parseFrequency :: [String] -> Frequency
@@ -42,12 +30,11 @@ parseFrequency (f:w:_) = Frequency (read f :: Integer) w
 
 
 parseFrequencies :: String -> [Frequency]
-parseFrequencies input =
-  (map parseFrequency . map words . lines) $ input
+parseFrequencies = map (parseFrequency . words) . lines
 
 
-filterByFrequency :: Integer -> [SPointer] -> [Frequency] -> [(SPointer, Integer)]
-filterByFrequency trashold spointers frequencies =
+frequencyFilter :: Integer -> [SPointer] -> [Frequency] -> [(SPointer, Integer)]
+frequencyFilter trashold spointers frequencies =
   filterPointers [] trashold (sort spointers) (sortBy f frequencies)
   where
     f x y = compare (word x) (word y)
@@ -58,5 +45,5 @@ filterByFrequency trashold spointers frequencies =
         LT -> filterPointers out th sps (fr:frs)
         GT -> filterPointers out th (sp:sps) frs
         EQ -> if freq fr >= th
-              then filterPointers ((sp,freq fr):out) th sps (fr:frs)
+              then filterPointers ((sp, freq fr):out) th sps (fr:frs)
               else filterPointers out th sps (fr:frs)

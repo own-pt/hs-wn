@@ -2,14 +2,31 @@
 
 module Query where
 
+import Data.List ( intercalate, sortBy, groupBy, sort )
+import Data.Char ( toLower )
+import Data.Maybe ( fromJust, fromMaybe )
+
 import Solr
-import Update
-import Data.List
-import Data.Char
-import Data.Maybe
+    ( Synset(word_pt, rdf_type, doc_id, wn30_en_adjectivePertainsTo,
+             wn30_en_adverbPertainsTo, wn30_en_antonymOf, wn30_en_attribute,
+             wn30_en_causes, wn30_en_classifiedByRegion,
+             wn30_en_classifiedByTopic, wn30_en_classifiedByUsage,
+             wn30_en_classifiesByRegion, wn30_en_classifiesByTopic,
+             wn30_en_classifiesByUsage, wn30_en_derivationallyRelated,
+             wn30_en_hasInstance, wn30_en_hypernymOf, wn30_en_hyponymOf,
+             wn30_en_instanceOf, wn30_en_memberHolonymOf,
+             wn30_en_memberMeronymOf, wn30_en_partHolonymOf,
+             wn30_en_partMeronymOf, wn30_en_participleOf,
+             wn30_en_sameVerbGroupAs, wn30_en_seeAlso,
+             wn30_en_substanceHolonymOf),
+      Pointer(source_word, target_word, pointer, target_synset),
+      Relation,
+      RDFType,
+      Sense )
+
 
 {-
-The attemp is to group elements of form (?a,?b,?ta,?tb,?rel) given synsets
+The attemp is to group elements of form (?a,?ta,?b,?tb,?rel) given synsets
 from portuguese related to synsets in english that sustain a relation ?rel
 
  - ?a and ?b are word/lexicalform
@@ -43,19 +60,14 @@ groupSensesWordB :: [SPointer] -> [SPointer]
 groupSensesWordB spointers =
   (map g3 . groupBy g2 . sortBy g1) spointers
   where
-    g x = (wordA x, relation x, typeA x, typeB x)
+    g x = (wordA x,relation x,typeA x, typeB x)
     g1 x y = compare (g x) (g y)
     g2 x y = (==) (g x) (g y)
-    first = head spointers
-    source = wordA first
-    g3 spointers = first {wordB = group_words spointers}
-    dsource source targets = filter (/=source) targets
-    dduplicates spointers =  (map head . group . sort) spointers
-    group_words spointers = (intercalate "/" . dsource source . dduplicates . map wordB) spointers
+    g3 sps = (head sps) {wordB = intercalate "/" (map wordB sps)}
 
     
-collectSensePointers :: [Synset] -> [SPointer]
-collectSensePointers synsets =
+collectRelationsSenses :: [Synset] -> [SPointer]
+collectRelationsSenses synsets =
   [ SPointer (map toLowerSub a) (map toLowerSub b) ta tb (pointer p)
   | (synA,p,synB) <- collectPointersSynsets synsets
   , a <- choseSenseWords synA (source_word p)

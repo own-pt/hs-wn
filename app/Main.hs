@@ -1,28 +1,28 @@
 module Main where
 
-import Solr
-import Query
-import Filter
-import Update
-import Execute
+import Lib ( processSynsets )
+import Query ( SPointer(wordA, wordB, relation, typeA, typeB) )
 
-import Data.List
+import Data.List ( intercalate, sortBy, groupBy )
 
-import Control.Monad
+import Control.Monad ()
 
-import System.Exit
-import System.Directory
-import System.Environment
+import System.Exit ( exitSuccess )
+import System.Directory ( createDirectoryIfMissing )
+import System.Environment ( getArgs )
+
 
 main :: IO ()
 main = getArgs >>= parse
 
 
 {- Command Line Interface -}
+parse :: [[Char]] -> IO b
 parse ["-h"] = usage >> exitSuccess
 parse input  = apply input >> exitSuccess
 
-usage = putStrLn "usage: [-h] pathSyns pathSugg pathVote pathFreq trashold pathOut\
+usage :: IO ()
+usage = putStrLn "Usage: [-h] pathSyns pathSugg pathVote pathFreq trashold pathOut\
                  \\n\tpathSyns - path to wn.json\
                  \\n\tpathSugg - path to suggestions.json\
                  \\n\tpathVote - path to votes.json\
@@ -31,9 +31,10 @@ usage = putStrLn "usage: [-h] pathSyns pathSugg pathVote pathFreq trashold pathO
                  \\n\tpathOut - path to output folder"
 
 
+apply :: [FilePath] -> IO ()
 apply [] = usage
 apply [pathSyns,pathSugg,pathVote,pathFreq,trashold,pathOut] =
-  (groupBy f . sortBy g) <$> synsets >>= (mapM_ $ save pathOut)
+  synsets >>= mapM_ (save pathOut) . groupBy f . sortBy g
   where
     f x y = (relation x, typeA x,typeB x) == (relation y, typeA y,typeB y)
     g x y = compare (relation x, typeA x,typeB x) (relation y, typeA y,typeB y)
@@ -44,10 +45,11 @@ apply inputs = usage
 save :: FilePath -> [SPointer] -> IO ()
 save pathOut spointers = do
   createDirectoryIfMissing True pathOut
-  writeFile filename output 
+  writeFile filepath output 
   where
     first = head spointers
-    output = (intercalate "\n" $ map showOut spointers)
-    showOut spointer = (wordA spointer) ++ "\t" ++ (wordB spointer)
-    filename = pathOut++"/"++(relation first)++"-"++(typeA first)++"-"++(typeB first)++".txt"
+    output = intercalate "\n" (map showOut spointers)
+    showOut spointer = wordA spointer ++ "\t" ++ wordB spointer
+    filename = relation first ++ "-" ++ typeA first ++ "-"++ typeB first ++ ".txt"
+    filepath = pathOut ++ "/" ++ filename
 

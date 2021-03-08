@@ -1,12 +1,14 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE DeriveGeneric, LambdaCase, OverloadedStrings, DuplicateRecordFields #-}
 
 module Solr where
 
-import Data.List
 import Data.Aeson
-import Data.Maybe
-import Data.Either
-import GHC.Generics
+    ( FromJSON(parseJSON),
+      Options(rejectUnknownFields, fieldLabelModifier),
+      defaultOptions,
+      eitherDecode,
+      genericParseJSON )
+import GHC.Generics ( Generic )
 import qualified Data.ByteString.Lazy as L
 
 
@@ -149,14 +151,14 @@ customOps =
   defaultOptions
     { rejectUnknownFields = True
     , fieldLabelModifier =
-        \label -> case label of
-          "synset_id" -> "doc_id"
-          "stype" -> "type"
-          "v_user" -> "user"
-          "s_user" -> "user"
-          "v_id" -> "id"
-          "s_id" -> "id"
-          label -> label
+        \case
+        "synset_id" -> "doc_id"
+        "stype" -> "type"
+        "v_user" -> "user"
+        "s_user" -> "user"
+        "v_id" -> "id"
+        "s_id" -> "id"
+        label -> label
     }
 
 instance Eq Vote where
@@ -174,7 +176,6 @@ instance Eq Suggestion where
 instance Ord Suggestion where
   (<=) x y = (<=) (s_id x) (s_id y)
 
-
 {- READING DOCUMENTS -}
 
 instance FromJSON Synset where
@@ -188,8 +189,13 @@ instance FromJSON Vote where
 
 instance FromJSON a => FromJSON (Document a)
 
+readSuggestion :: L.ByteString -> Either String (Document Suggestion)
 readSuggestion s = eitherDecode s :: Either String (Document Suggestion)
+
+readSynset :: L.ByteString -> Either String (Document Synset)
 readSynset s = eitherDecode s :: Either String (Document Synset)
+
+readVote :: L.ByteString -> Either String (Document Vote)
 readVote s = eitherDecode s :: Either String (Document Vote)
 
 readJL :: (L.ByteString -> b) -> FilePath -> IO [b]
