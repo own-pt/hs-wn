@@ -22,7 +22,7 @@ import Text.ParserCombinators.ReadP
 data Frequency = Frequency
   { freq :: Integer
   , word :: String
-  , pos :: String
+  -- , pos :: String
   } deriving (Show)
 
 getFrequencies :: FilePath -> IO String
@@ -30,9 +30,9 @@ getFrequencies path = do
   file <- readFile path
   return file
 
--- supose files like: FREQ WORD POS
+-- supose files like: FREQ WORD
 parseFrequency :: [String] -> Frequency
-parseFrequency (f:w:pos:[]) = Frequency (read f :: Integer) w pos
+parseFrequency (f:w:_) = Frequency (read f :: Integer) w
 
 
 parseFrequencies :: String -> [Frequency]
