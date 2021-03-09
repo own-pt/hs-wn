@@ -11,7 +11,7 @@ file with frequencies generated using on the directory:
 awk '$0 ~ /^[0-9]/ {print $3,$4}' *.conllu | sort | uniq -c | sort -nr
 -}
 
-module Filter where
+module FrequencyFilter where
 
 import Query ( SPointer(wordA) )
 import Data.List ( sortBy, sort )

@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings, DuplicateRecordFields #-}
 
-module Update where
+module UpdateSynsets where
 
-import Solr
+import ReadDocs
     ( Document(_source),
       Synset(doc_id, example_pt, gloss_pt, word_pt),
       Suggestion(s_user, status, s_id, synset_id, action, params),
@@ -13,18 +13,15 @@ import Data.Char ( toLower )
 import Data.Maybe ( fromJust, fromMaybe )
 import Data.Either ( rights )
 
-{- UPDATE SYNSETS -}
 
 f1 :: [Either String (Document a)] -> [a]
 f1 = map _source . rights
-
 
 f2 :: [Vote] -> [[Vote]]
 f2 xs = groupBy fg (sortBy fo xs)
   where
     fg = \x y -> suggestion_id x == suggestion_id y
     fo = \x y -> suggestion_id x `compare` suggestion_id y
-
 
 f3 :: [[Vote]] -> [(String, Integer)]
 f3 =
@@ -38,7 +35,6 @@ c0 :: Integer -> [(String, Integer)] -> [String]
 c0 th ids_score =
   [id | (id, sc) <- ids_score, sc >= th]
 
-
 c1 :: [Suggestion] -> [Suggestion]
 c1 =
   filter (\s -> all ($ s) [f_user, f_status, f_comment])
@@ -46,7 +42,6 @@ c1 =
     f_user s = s_user s `elem` [Just "arademaker", Just "vcvpaiva"]
     f_status s = status s == "new"
     f_comment s = action s /= "comment"
-
 
 c2 :: [Suggestion] -> [String] -> [Suggestion]
 c2 ss is =
@@ -60,7 +55,6 @@ c2 ss is =
         GT -> filter_suggestions out (s:ss) is
         EQ -> filter_suggestions (s:out) ss is
 
--- NOTE: groups suggestions for synset
 c3 :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
 c3 sns sgs =
   group_sns_sgs [] (sortBy c_sns sns) (groupBy g_sgs (sortBy c_sgs sgs))
@@ -81,7 +75,6 @@ c4 synsets suggestions =
   [updateSynset ta tb | (ta, tb) <- c3 synsets suggestions]
   
 
--- NOTE: discuss optimal solution
 applySuggestion :: Synset -> Suggestion -> Synset
 applySuggestion sn sg =
   case action sg of
@@ -98,11 +91,6 @@ applySuggestion sn sg =
     removeItem x Nothing = Nothing
     removeItem x (Just ys) = Just (filter (/=x) ys)
 
+
 updateSynset :: Synset -> [Suggestion] -> Synset
 updateSynset = foldl applySuggestion
-
--- TODO
--- c0 :: Integer -> [(String, Integer)] -> [(Suggestions, Integer)]
--- c1 :: [Suggestion, Inteter] -> [Suggestion->Bool] -> [Suggestion]
-
--- on removeElement, when list is [], put Nothing

@@ -2,10 +2,10 @@
 
 module Lib where
 
-import Solr ( readSuggestion, readSynset, readVote, readJL )
+import ReadDocs ( readSuggestion, readSynset, readVote, readJL )
 import Query ( groupSensesWordB, SPointer, collectRelationsSenses )
-import Filter ( getFrequencies, Frequency, parseFrequencies, frequencyFilter )
-import Update ( f1, f2, f3, c0, c1, c2, c4 )
+import FrequencyFilter ( getFrequencies, Frequency, parseFrequencies, frequencyFilter )
+import UpdateSynsets ( f1, f2, f3, c0, c1, c2, c4 )
 
 import Data.List ( sortBy )
 

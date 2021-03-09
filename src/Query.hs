@@ -1,12 +1,23 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings, DuplicateRecordFields #-}
 
+{-
+The attemp is to group elements of form (?a,?ta,?b,?tb,?rel) given synsets
+from portuguese related to synsets in english that sustain a relation ?rel
+
+ - ?a and ?b are word/lexicalform
+ - ?ta and ?tb are synset types
+ - ?rel is a relation
+
+see: github.com/NLP-CISUC/PT-LexicalSemantics/blob/master/OWN-PT/query.sparql
+-}
+
 module Query where
 
 import Data.List ( intercalate, sortBy, groupBy, sort )
 import Data.Char ( toLower )
 import Data.Maybe ( fromJust, fromMaybe )
 
-import Solr
+import ReadDocs
     ( Synset(word_pt, rdf_type, doc_id, wn30_en_adjectivePertainsTo,
              wn30_en_adverbPertainsTo, wn30_en_antonymOf, wn30_en_attribute,
              wn30_en_causes, wn30_en_classifiedByRegion,
@@ -25,17 +36,6 @@ import Solr
       Sense )
 
 
-{-
-The attemp is to group elements of form (?a,?ta,?b,?tb,?rel) given synsets
-from portuguese related to synsets in english that sustain a relation ?rel
-
- - ?a and ?b are word/lexicalform
- - ?ta and ?tb are synset types
- - ?rel is a relation
-
-see: github.com/NLP-CISUC/PT-LexicalSemantics/blob/master/OWN-PT/query.sparql
--}
-
 data SPointer = SPointer
   { wordA :: Sense
   , wordB :: Sense
@@ -52,13 +52,15 @@ instance Eq SPointer where
 instance Ord SPointer where
   (<=) x y = (<=) (sPointerToTuple x) (sPointerToTuple y)
 
+sPointerToTuple :: SPointer -> (Sense, Sense, RDFType, RDFType, Relation)
 sPointerToTuple (SPointer a b ta tb rel) = (a,b,ta,tb,rel)
-tupleToSPointer (a,b,ta,tb,rel) = (SPointer a b ta tb rel)
+
+tupleToSPointer :: (Sense, Sense, RDFType, RDFType, Relation) -> SPointer
+tupleToSPointer (a,b,ta,tb,rel) = SPointer a b ta tb rel
 
 
 groupSensesWordB :: [SPointer] -> [SPointer]
-groupSensesWordB spointers =
-  (map g3 . groupBy g2 . sortBy g1) spointers
+groupSensesWordB = map g3 . groupBy g2 . sortBy g1
   where
     g x = (wordA x,relation x,typeA x, typeB x)
     g1 x y = compare (g x) (g y)
@@ -75,10 +77,11 @@ collectRelationsSenses synsets =
   , ta <- rdf_type synA
   , tb <- rdf_type synB]
    where
-    toLowerSub = (subs ' ' '_') . toLower
+    toLowerSub = subs ' ' '_' . toLower
     subs a b c = if c == a then b else c
     choseSenseWords synX Nothing = fromMaybe [] (word_pt synX)
-    choseSenseWords synX word = [fromJust word]
+    choseSenseWords synX (Just word) =
+      [word | word `elem` choseSenseWords synX Nothing]
 
   
 collectPointersSynsets :: [Synset] -> [(Synset, Pointer, Synset)]
@@ -89,16 +92,17 @@ collectPointersSynsets synsets =
     relationIds = [(s,p) | s <- synsets, p <- collectPointers s]
 
 
+collectSynsets :: [(a, Pointer, Synset)] -> [(a, Pointer)] -> [Synset] -> [(a, Pointer, Synset)]
 collectSynsets out [] _ = out
 collectSynsets out (rid:rids) (syn:syns) =
-  case (compare (target_synset $ snd rid) (doc_id syn)) of
+  case compare (target_synset $ snd rid) (doc_id syn) of
     GT -> collectSynsets out (rid:rids) syns
     EQ -> collectSynsets ((fst rid, snd rid, syn):out) rids (syn:syns)
 
 
 collectPointers :: Synset -> [Pointer]
 collectPointers synset =
-  concat $ map (fromMaybe []) $ pointers
+  concatMap (fromMaybe []) pointers
   where
     pointers = [relation synset | relation <- relations]
 

@@ -5,8 +5,6 @@ import Query ( SPointer(wordA, wordB, relation, typeA, typeB) )
 
 import Data.List ( intercalate, sortBy, groupBy )
 
-import Control.Monad ()
-
 import System.Exit ( exitSuccess )
 import System.Directory ( createDirectoryIfMissing )
 import System.Environment ( getArgs )

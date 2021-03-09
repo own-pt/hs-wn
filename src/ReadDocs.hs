@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, LambdaCase, OverloadedStrings, DuplicateRecordFields #-}
 
-module Solr where
+module ReadDocs where
 
 import Data.Aeson
     ( FromJSON(parseJSON),
@@ -59,8 +59,7 @@ data Pointer =
     }
   deriving (Show, Generic)
 
--- relations and morphosemantic links were extracted from the wn.json with
--- for s in `egrep -o  "wn30_en_[a-zA-Z]+" wn.json | sort | uniq  | sort`; do echo $s ":: Maybe [Pointer]," ; done
+
 data Synset =
   Synset
     { word_count_pt :: Int
