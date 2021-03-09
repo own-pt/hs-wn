@@ -15,18 +15,25 @@ module Filter where
 
 import Query ( SPointer(wordA) )
 import Data.List ( sortBy, sort )
+import Data.Char ( toLower )
 
 data Frequency = Frequency
   { freq :: Integer
   , word :: String
   } deriving (Show)
 
+
 getFrequencies :: FilePath -> IO String
 getFrequencies = readFile
 
 
 parseFrequency :: [String] -> Frequency
-parseFrequency (f:w:_) = Frequency (read f :: Integer) w
+parseFrequency [] = Frequency 0 ""
+parseFrequency [f] = Frequency 0 ""
+parseFrequency (f:w:_) = Frequency (read f :: Integer) (prettyfy w)
+  where prettyfy = map (toLower . \x -> if x == '=' then '_' else x)
+
+
 
 
 parseFrequencies :: String -> [Frequency]
