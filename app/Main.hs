@@ -46,7 +46,7 @@ save pathOut spointers = do
   writeFile filepath output 
   where
     first = head spointers
-    output = intercalate "\n" (map showOut spointers)
+    output = intercalate "\n" (map showOut spointers) ++ "\n"
     showOut spointer = wordA spointer ++ "\t" ++ wordB spointer
     filename = relation first ++ "-" ++ typeA first ++ "-"++ typeB first ++ ".txt"
     filepath = pathOut ++ "/" ++ filename
