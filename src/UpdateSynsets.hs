@@ -14,49 +14,56 @@ import Data.Maybe ( fromJust, fromMaybe )
 import Data.Either ( rights )
 
 
-f1 :: [Either String (Document a)] -> [a]
-f1 = map _source . rights
+readFromDocs :: [Either String (Document a)] -> [a]
+readFromDocs = map _source . rights
 
-f2 :: [Vote] -> [[Vote]]
-f2 xs = groupBy fg (sortBy fo xs)
+
+groupVotes :: [Vote] -> [[Vote]]
+groupVotes xs = groupBy fg (sortBy fo xs)
   where
-    fg = \x y -> suggestion_id x == suggestion_id y
-    fo = \x y -> suggestion_id x `compare` suggestion_id y
+    fg x y = suggestion_id x == suggestion_id y
+    fo x y = suggestion_id x `compare` suggestion_id y
 
-f3 :: [[Vote]] -> [(String, Integer)]
-f3 =
-  map (\x -> (i x, s x)) 
+
+scoreId :: [[Vote]] -> [(String, Integer)]
+scoreId =
+  map (\x -> (suggestion x, score x)) 
   where
-    i = suggestion_id . head 
-    s = sum . map value
+    suggestion = suggestion_id . head 
+    score = sum . map value
 
 
-c0 :: Integer -> [(String, Integer)] -> [String]
-c0 th ids_score =
-  [id | (id, sc) <- ids_score, sc >= th]
-
-c1 :: [Suggestion] -> [Suggestion]
-c1 =
-  filter (\s -> all ($ s) [f_user, f_status, f_comment])
+joinById :: [Suggestion] -> [(String, Integer)] -> [(Suggestion, Integer)]
+joinById suggestions idscores =
+  _joinById [] (sort suggestions) (sort idscores)
   where
-    f_user s = s_user s `elem` [Just "arademaker", Just "vcvpaiva"]
-    f_status s = status s == "new"
-    f_comment s = action s /= "comment"
+    _joinById out [] idscores = out
+    _joinById out suggestions [] = [(s,0) | s <- suggestions] ++ out
+    _joinById out (sg:suggestions) ((id,score):idscores) = 
+      case compare (s_id sg) id of
+        GT -> _joinById ((sg,0):out) suggestions idscores
+        EQ -> _joinById ((sg,score):out) suggestions idscores
+        LT -> _joinById out (sg:suggestions) idscores
 
-c2 :: [Suggestion] -> [String] -> [Suggestion]
-c2 ss is =
-  filter_suggestions [] (sort ss) (sort is)
+
+filterByRules :: Integer -> [(Suggestion, Integer)] -> [Suggestion]
+filterByRules trashold =
+  map fst . filter rules
   where
-    filter_suggestions out [] _ = out
-    filter_suggestions out ss [] = out
-    filter_suggestions out (s:ss) (i:is) =
-      case compare (s_id s) i of
-        LT -> filter_suggestions out ss (i:is)
-        GT -> filter_suggestions out (s:ss) is
-        EQ -> filter_suggestions (s:out) ss is
+    rules x = all ($ x) [rule1,rule2,rule3] 
+    rule3 (s,c) = action s /= "comment"
+    rule2 (s,c) = status s == "new"
+    rule1 (s,c) =
+      if fromMaybe "" (s_user s) `elem` users_senior
+        then c >= trashold_senior
+        else c >= trashold_junior
+    users_senior = ["arademaker", "vcvpaiva"]
+    trashold_senior = 1
+    trashold_junior = trashold
 
-c3 :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
-c3 sns sgs =
+
+groupSuggestions :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
+groupSuggestions sns sgs =
   group_sns_sgs [] (sortBy c_sns sns) (groupBy g_sgs (sortBy c_sgs sgs))
   where
     c_sns x y = compare (doc_id x) (doc_id y)
@@ -70,9 +77,9 @@ c3 sns sgs =
         EQ -> group_sns_sgs ((s,sg):out) ss sgs
         LT -> group_sns_sgs ((s,[]):out) ss (sg:sgs)
 
-c4 :: [Synset] -> [Suggestion] -> [Synset]
-c4 synsets suggestions =
-  [updateSynset ta tb | (ta, tb) <- c3 synsets suggestions]
+applySuggestions :: [Synset] -> [Suggestion] -> [Synset]
+applySuggestions synsets suggestions =
+  [updateSynset ta tb | (ta, tb) <- groupSuggestions synsets suggestions]
   
 
 applySuggestion :: Synset -> Suggestion -> Synset
