@@ -13,7 +13,7 @@ see: github.com/NLP-CISUC/PT-LexicalSemantics/blob/master/OWN-PT/query.sparql
 
 module Query where
 
-import Data.List ( intercalate, sortBy, groupBy, sort )
+import Data.List ( intercalate, sortBy, groupBy, group, sort )
 import Data.Char ( toLower )
 import Data.Maybe ( fromJust, fromMaybe )
 
@@ -65,7 +65,10 @@ groupSensesWordB = map g3 . groupBy g2 . sortBy g1
     g x = (wordA x,relation x,typeA x, typeB x)
     g1 x y = compare (g x) (g y)
     g2 x y = (==) (g x) (g y)
-    g3 sps = (head sps) {wordB = intercalate "/" (map wordB sps)}
+    g3 sps = (head sps) {wordB = intercalate "/" (targets sps)}
+    targets sps = (dropsource sps . dropdups . map wordB) sps
+    dropsource sps l = [x | x <- l, x /= (wordA . head) sps]
+    dropdups = map head . group . sort
 
     
 collectRelationsSenses :: [Synset] -> [SPointer]
