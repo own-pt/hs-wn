@@ -34,8 +34,6 @@ parseFrequency (f:w:_) = Frequency (read f :: Integer) (prettyfy w)
   where prettyfy = map (toLower . \x -> if x == '=' then '_' else x)
 
 
-
-
 parseFrequencies :: String -> [Frequency]
 parseFrequencies = map (parseFrequency . words) . lines
 
