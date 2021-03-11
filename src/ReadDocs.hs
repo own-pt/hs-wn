@@ -146,6 +146,7 @@ data Document a =
     }
   deriving (Show, Generic)
 
+customOps :: Options
 customOps =
   defaultOptions
     { rejectUnknownFields = True
