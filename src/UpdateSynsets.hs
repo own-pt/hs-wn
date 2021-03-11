@@ -41,25 +41,25 @@ joinById suggestions idscores =
     _joinById out suggestions [] = [(s,0) | s <- suggestions] ++ out
     _joinById out (sg:suggestions) ((id,score):idscores) = 
       case compare (s_id sg) id of
-        GT -> _joinById ((sg,0):out) suggestions idscores
+        GT -> _joinById out (sg:suggestions) idscores
         EQ -> _joinById ((sg,score):out) suggestions idscores
-        LT -> _joinById out (sg:suggestions) idscores
+        LT -> _joinById ((sg,0):out) suggestions ((id,score):idscores)
 
 
-filterByRules :: Integer -> [(Suggestion, Integer)] -> [Suggestion]
-filterByRules trashold =
+filterByRules :: [(Suggestion, Integer)] -> [Suggestion]
+filterByRules =
   map fst . filter rules
   where
     rules x = all ($ x) [rule1,rule2,rule3] 
     rule3 (s,c) = action s /= "comment"
     rule2 (s,c) = status s == "new"
     rule1 (s,c) =
-      if fromMaybe "" (s_user s) `elem` users_senior
+      if s_user s `elem` users_senior
         then c >= trashold_senior
         else c >= trashold_junior
-    users_senior = ["arademaker", "vcvpaiva"]
+    users_senior = [Just "arademaker", Just "vcvpaiva"]
     trashold_senior = 1
-    trashold_junior = trashold
+    trashold_junior = 2
 
 
 groupSuggestions :: [Synset] -> [Suggestion] -> [(Synset,[Suggestion])]
