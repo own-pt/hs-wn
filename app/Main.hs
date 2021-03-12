@@ -5,7 +5,8 @@
 import Lib
 import Query
 
-import Data.List ( intercalate, sort, sortBy, group, groupBy, elem, notElem)
+import Data.List
+import Data.Maybe
 
 import System.Exit ( exitSuccess )
 import System.Directory ( createDirectoryIfMissing )
@@ -45,11 +46,9 @@ apply inputs = usage
 save :: FilePath -> [SPointer] -> IO ()
 save pathOut spointers = do
   createDirectoryIfMissing True pathOut
-  if length output > 30
-    then
-      writeFile filepath (concat output++"\n")
-    else
-      putStrLn ("file " ++ filename ++ " not generated.")
+  if isJust output
+    then writeFile filepath (fromJust output)
+    else putStrLn ("file " ++ filename ++ " not generated.")
   where
     output = formatOutput spointers
     first = head spointers
@@ -59,24 +58,29 @@ save pathOut spointers = do
 
 {- formating rules for a group -}
 
-formatOutput :: [SPointer] -> [String]
+formatOutput :: [SPointer] -> Maybe String
 formatOutput spointers =
-  map _formatOutput grouped
+  if length output >= 30
+    then Just (concat output)
+    else Nothing
   where
+    output = mapMaybe _formatOutput grouped
     g1 x y = (==) (sense $ senseA x) (sense $ senseA y)
     g2 x y = compare (sense $ senseA x) (sense $ senseA y)
     grouped = groupBy g1 $ (sortBy g2 spointers)
 
 
-_formatOutput :: [SPointer] -> String
+_formatOutput :: [SPointer] -> Maybe String
 _formatOutput spointers =
   if rule1 sensea && rule2 sensea && rule3 sensea && rule3 sensesb
-    then sensea ++ "\t" ++ sensesb ++ "\n"
-    else ""
+    then Just (sensea ++ "\t" ++ sensesb ++ "\n")
+    else Nothing
   where
     sensea = (sense . senseA . head) spointers
     sensesb = intercalate "/" filteredsensesb
-    sortedsensesb = map sense $ sort (map senseB spointers)
+    -- group sensesB
+    g x y = (==) (sense x) (sense y)
+    sortedsensesb = map (sense . head) $ groupBy g $ sort $ map senseB spointers
     filteredsensesb = [s | s <- sortedsensesb, rule1 s, rule2 s, rule3 s, rule4 s]
     -- rules
     rule1 sense = notElem ' ' sense
