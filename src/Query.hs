@@ -18,22 +18,6 @@ import Data.Char ( toLower )
 import Data.Maybe ( fromJust, fromMaybe )
 
 import ReadDocs
-    ( Synset(word_pt, rdf_type, doc_id, wn30_en_adjectivePertainsTo,
-             wn30_en_adverbPertainsTo, wn30_en_antonymOf, wn30_en_attribute,
-             wn30_en_causes, wn30_en_classifiedByRegion,
-             wn30_en_classifiedByTopic, wn30_en_classifiedByUsage,
-             wn30_en_classifiesByRegion, wn30_en_classifiesByTopic,
-             wn30_en_classifiesByUsage, wn30_en_derivationallyRelated,
-             wn30_en_hasInstance, wn30_en_hypernymOf, wn30_en_hyponymOf,
-             wn30_en_instanceOf, wn30_en_memberHolonymOf,
-             wn30_en_memberMeronymOf, wn30_en_partHolonymOf,
-             wn30_en_partMeronymOf, wn30_en_participleOf,
-             wn30_en_sameVerbGroupAs, wn30_en_seeAlso,
-             wn30_en_substanceHolonymOf),
-      Pointer(source_word, target_word, pointer, target_synset),
-      Relation,
-      RDFType,
-      Sense )
 
 
 data SPointer = SPointer
@@ -110,12 +94,13 @@ collectPointers synset =
     pointers = [relation synset | relation <- relations]
 
 
--- relation fuctions
 relations :: [Synset -> Maybe [Pointer]]
 relations = [
+  -- relations
   wn30_en_adjectivePertainsTo,
   wn30_en_adverbPertainsTo,
   wn30_en_antonymOf,
+  wn30_pt_antonymOf,
   wn30_en_attribute,
   wn30_en_causes,
   wn30_en_classifiedByRegion,
@@ -136,4 +121,34 @@ relations = [
   wn30_en_participleOf,
   wn30_en_sameVerbGroupAs,
   wn30_en_seeAlso,
-  wn30_en_substanceHolonymOf]
+  wn30_en_substanceHolonymOf,
+  wn30_en_substanceMeronymOf,
+  -- morphosemantic links
+  wn30_en_property,
+  wn30_pt_property,
+  wn30_en_result,
+  wn30_pt_result,
+  wn30_en_state,
+  wn30_pt_state,
+  wn30_en_undergoer,
+  wn30_pt_undergoer,
+  wn30_en_uses,
+  wn30_pt_uses,
+  wn30_en_vehicle,
+  wn30_pt_vehicle,
+  wn30_en_entails,
+  wn30_en_event,
+  wn30_pt_event,
+  wn30_en_instrument,
+  wn30_pt_instrument,
+  wn30_en_location,
+  wn30_pt_location,
+  wn30_en_material,
+  wn30_pt_material,
+  wn30_en_agent,
+  wn30_pt_agent,
+  wn30_en_bodyPart,
+  wn30_pt_bodyPart,
+  wn30_en_byMeansOf,
+  wn30_pt_byMeansOf,
+  wn30_en_destination]
