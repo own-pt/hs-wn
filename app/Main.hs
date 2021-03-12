@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings, DuplicateRecordFields #-}
 
---module Main where
+module Main where
 
 import Lib
 import Query
@@ -19,48 +19,60 @@ main = getArgs >>= parse
 
 {- Command Line Interface -}
 
-parse :: [[Char]] -> IO b
-parse ["-h"] = usage >> exitSuccess
-parse input  = apply input >> exitSuccess
-
 usage :: IO ()
-usage = putStrLn "Usage: [-h] pathSyns pathSugg pathVote pathFreq trashold pathOut\
+usage = putStrLn "Usage: [-h] pathSyns pathSugg pathVote [pathOut] [lines]\
                  \\n\tpathSyns - path to wn.json\
                  \\n\tpathSugg - path to suggestions.json\
                  \\n\tpathVote - path to votes.json\
-                 \\n\tpathOutput - path to output folder"
+                 \\n\tpathOut - path to output folder (default: output)\
+                 \\n\tlines - minimun lines to write the file (default: 30)"
+
+
+parse :: [[Char]] -> IO b
+parse input  = apply input >> exitSuccess
 
 
 apply :: [FilePath] -> IO ()
-apply [] = usage
+-- help
+apply ["-h"] = usage
+-- default: output
+apply [pathSyns,pathSugg,pathVote] =
+  apply [pathSyns,pathSugg,pathVote,"output"]
+-- default: 30
 apply [pathSyns,pathSugg,pathVote,pathOut] =
-  spointers >>= mapM_ (save pathOut) . groupBy g1 . sortBy g2
+  apply [pathSyns,pathSugg,pathVote,pathOut,"30"]
+-- normal use
+apply [pathSyns,pathSugg,pathVote,pathOut,lines] =
+  spointers >>= mapM_ (save pathOut _lines) . groupBy g1 . sortBy g2
   where
+    _lines = read lines :: Int
     f x = (relation x, typeA x, typeB x)
     g1 x y = (==) (f x) (f y)
     g2 x y = compare (f x) (f y)
     spointers = updatedSPointers pathSyns pathSugg pathVote
+-- default use
 apply inputs = usage
 
 
-save :: FilePath -> [SPointer] -> IO ()
-save pathOut spointers = do
+-- NOTE: serializes output
+save :: FilePath -> Int -> [SPointer] -> IO ()
+save pathOut lines spointers = do
   createDirectoryIfMissing True pathOut
   if isJust output
     then writeFile filepath (fromJust output)
     else putStrLn ("file " ++ filename ++ " not generated.")
   where
-    output = formatOutput spointers
+    output = formatOutput lines spointers
     first = head spointers
     filepath = pathOut ++ "/" ++ filename
     filename = relation first ++ "-" ++ typeA first ++ "-"++ typeB first ++ ".txt"
 
 
-{- formating rules for a group -}
-
-formatOutput :: [SPointer] -> Maybe String
-formatOutput spointers =
-  if length output >= 30
+{- formats output -}
+-- NOTE: formats all output
+formatOutput :: Int -> [SPointer] -> Maybe String
+formatOutput lines spointers =
+  if length output >= lines
     then Just (concat output)
     else Nothing
   where
@@ -69,7 +81,7 @@ formatOutput spointers =
     g2 x y = compare (sense $ senseA x) (sense $ senseA y)
     grouped = groupBy g1 $ (sortBy g2 spointers)
 
-
+-- NOTE: formats an output line
 _formatOutput :: [SPointer] -> Maybe String
 _formatOutput spointers =
   if rule1 sensea && rule2 sensea && rule3 sensea && rule3 sensesb
