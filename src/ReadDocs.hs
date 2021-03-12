@@ -11,11 +11,6 @@ import Data.Aeson
 import GHC.Generics ( Generic )
 import qualified Data.ByteString.Lazy as L
 
-
-type Sense = String
-type RDFType = String
-type Relation = String
-
 data Vote =
   Vote
     { v_id :: String

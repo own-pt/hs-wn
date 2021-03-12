@@ -10,7 +10,6 @@ import ReadDocs
 
 import Data.List ( sortBy, groupBy, sort, intercalate, sortBy, groupBy, sort )
 import Data.Char ( toLower )
-import Data.Maybe ( fromJust, fromMaybe )
 import Data.Either ( rights )
 
 

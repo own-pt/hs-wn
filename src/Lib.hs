@@ -2,27 +2,18 @@
 
 module Lib where
 
-import Query ( groupSensesWordB, SPointer, collectRelationsSenses )
+import Query ( SPointer, collectRelationsSenses )
 import ReadDocs ( readSuggestion, readSynset, readVote, readJL )
-import UpdateSynsets ( readFromDocs, groupVotes, scoreId, applySuggestions , filterByRules, joinById) 
-import FrequencyFilter ( getFrequencies, Frequency, parseFrequencies, frequencyFilter )
+import UpdateSynsets ( readFromDocs, groupVotes, scoreId, applySuggestions , filterByRules, joinById)
 
 import Data.List ( sortBy )
 
 
-processSynsets :: Integer -> FilePath -> FilePath -> FilePath -> FilePath -> IO [SPointer]
-processSynsets trashold pathSyns pathSugg pathVote pathFreq =
-  map fst . sortBy f <$> spointers_filtered
-  where
-    f x y = compare (snd y) (snd x)
-    frequencies = parseFrequencies <$> getFrequencies pathFreq
-    spointers_updated = updatedSens pathSyns pathSugg pathVote
-    spointers_filtered = frequencyFilter trashold <$> spointers_updated <*> frequencies
 
 
-updatedSens :: [Char] -> [Char] -> [Char] -> IO [SPointer]
-updatedSens pathSyns pathSugg pathVote =
-  groupSensesWordB . collectRelationsSenses <$> synsets_updated
+updatedSPointers :: [Char] -> [Char] -> [Char] -> IO [SPointer]
+updatedSPointers pathSyns pathSugg pathVote =
+  collectRelationsSenses <$> synsets_updated
   where
     -- update synsets
     synsets = fmap readFromDocs (readJL readSynset pathSyns)

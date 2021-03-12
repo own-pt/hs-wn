@@ -16,59 +16,66 @@ module Query where
 import Data.List ( intercalate, sortBy, groupBy, group, sort )
 import Data.Char ( toLower )
 import Data.Maybe ( fromJust, fromMaybe )
+import qualified Data.Map as M
 
 import ReadDocs
+import Polysemy
 
+type RDFType = String
+type Relation = String
+
+data Sense = 
+  Sense
+  { sense :: String
+  , isCore :: Bool
+  , polysemy :: Integer
+  , frequency :: Integer
+  } deriving (Show, Eq)
+
+instance Ord Sense where
+  (<=) x y = (<=)
+    (not $ isCore x, polysemy x, sense x, - frequency x)
+    (not $ isCore y, polysemy y, sense y, - frequency x)
 
 data SPointer = SPointer
-  { wordA :: Sense
-  , wordB :: Sense
+  { senseA :: Sense
+  , senseB :: Sense
   , typeA :: RDFType
   , typeB :: RDFType
-  -- , docIdA :: String
-  -- , docIdB :: String
   , relation :: Relation
-  } deriving (Show)
-
-instance Eq SPointer where
-  (==) x y = (==) (sPointerToTuple x) (sPointerToTuple y)
-
-instance Ord SPointer where
-  (<=) x y = (<=) (sPointerToTuple x) (sPointerToTuple y)
-
-sPointerToTuple :: SPointer -> (Sense, Sense, RDFType, RDFType, Relation)
-sPointerToTuple (SPointer a b ta tb rel) = (a,b,ta,tb,rel)
-
-tupleToSPointer :: (Sense, Sense, RDFType, RDFType, Relation) -> SPointer
-tupleToSPointer (a,b,ta,tb,rel) = SPointer a b ta tb rel
+  } deriving (Show, Eq, Ord)
 
 
-groupSensesWordB :: [SPointer] -> [SPointer]
-groupSensesWordB = map g3 . groupBy g2 . sortBy g1
+senseFromSynset :: [Char] -> Synset -> Integer -> Integer -> Sense
+senseFromSynset w s
+  = Sense
+      (map toLower w)
+      ("CoreConcept" `elem` rdf_type s)
+
+{- main code -}
+
+groupSensesWordB :: [SPointer] -> [[SPointer]]
+groupSensesWordB = groupBy g1 . sortBy g2 . sort
   where
-    g x = (wordA x,relation x,typeA x, typeB x)
-    g1 x y = compare (g x) (g y)
-    g2 x y = (==) (g x) (g y)
-    g3 sps = (head sps) {wordB = intercalate "/" (targets sps)}
-    targets sps = (dropsource sps . dropdups . map wordB) sps
-    dropsource sps l = [x | x <- l, x /= (wordA . head) sps]
-    dropdups = map head . group . sort
+    g x = (senseA x, relation x, typeA x, typeB x)
+    g1 x y = (==) (g x) (g y)
+    g2 x y = compare (g x) (g y)
 
     
 collectRelationsSenses :: [Synset] -> [SPointer]
 collectRelationsSenses synsets =
-  [ SPointer (map toLowerSub a) (map toLowerSub b) ta tb (pointer p)
+  [ SPointer (senseFromSynset a synA (mapPolysemy M.! a) 0) (senseFromSynset b synB (mapPolysemy M.! b) 0) ta tb (pointer p)
   | (synA,p,synB) <- collectPointersSynsets synsets
   , a <- choseSenseWords synA (source_word p)
   , b <- choseSenseWords synB (target_word p)
   , ta <- rdf_type synA
   , tb <- rdf_type synB]
    where
-    toLowerSub = subs ' ' '_' . toLower
     subs a b c = if c == a then b else c
     choseSenseWords synX Nothing = fromMaybe [] (word_pt synX)
     choseSenseWords synX (Just word) =
       [word | word `elem` choseSenseWords synX Nothing]
+    mapPolysemy = getPolysemias synsets
 
   
 collectPointersSynsets :: [Synset] -> [(Synset, Pointer, Synset)]

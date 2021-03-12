@@ -11,17 +11,18 @@ file with frequencies generated using on the directory:
 awk '$0 ~ /^[0-9]/ {print $3,$4}' *.conllu | sort | uniq -c | sort -nr
 -}
 
-module FrequencyFilter where
+module Frequency where
 
-import Query ( SPointer(wordA) )
+import Query
 import Data.List ( sortBy, sort )
 import Data.Char ( toLower )
 
-data Frequency = Frequency
-  { freq :: Integer
-  , word :: String
-  } deriving (Show)
-
+data Frequency =
+  Frequency
+    { freq :: Integer
+    , word :: String
+    } deriving (Show)
+    
 
 getFrequencies :: FilePath -> IO String
 getFrequencies = readFile
@@ -46,7 +47,7 @@ frequencyFilter trashold spointers frequencies =
     filterPointers out th [] frs = out
     filterPointers out th sps [] = out
     filterPointers out th (sp:sps) (fr:frs) =
-      case compare (wordA sp) (word fr) of
+      case compare (sense $ senseA sp) (word fr) of
         LT -> filterPointers out th sps (fr:frs)
         GT -> filterPointers out th (sp:sps) frs
         EQ -> if freq fr >= th
