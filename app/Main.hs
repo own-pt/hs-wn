@@ -73,7 +73,7 @@ save pathOut lines spointers = do
 -- NOTE: formats all output
 formatOutput :: Int -> [SPointer] -> Maybe String
 formatOutput lines spointers =
-  if length output >= lines && rule1 
+  if length output >= lines 
     then Just (concat output)
     else Nothing
   where
@@ -81,10 +81,6 @@ formatOutput lines spointers =
     g1 x y = (==) (sense $ senseA x) (sense $ senseA y)
     g2 x y = compare (sense $ senseA x) (sense $ senseA y)
     grouped = groupBy g1 $ (sortBy g2 spointers)
-    -- files rules
-    first = head spointers
-    rule1 = and [not $ isSubsequenceOf r (relation first) | r <- ignore]
-    ignore = ["seeAlso","instanceOf","hasInstance","classifiedBy"]
 
 -- NOTE: formats an output line
 _formatOutput :: [SPointer] -> Maybe String
