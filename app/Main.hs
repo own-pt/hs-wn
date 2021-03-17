@@ -80,7 +80,7 @@ formatOutput lines spointers =
     output = mapMaybe _formatOutput grouped
     g1 x y = (==) (sense $ senseA x) (sense $ senseA y)
     g2 x y = compare (sense $ senseA x) (sense $ senseA y)
-    grouped = groupBy g1 $ (sortBy g2 spointers)
+    grouped = groupBy g1 $ sortBy g2 spointers
 
 -- NOTE: formats an output line
 _formatOutput :: [SPointer] -> Maybe String
@@ -92,8 +92,10 @@ _formatOutput spointers =
     sensea = (sense . senseA . head) spointers
     sensesb = intercalate "/" filteredsensesb
     -- group sensesB
-    g x y = (==) (sense x) (sense y)
-    sortedsensesb = map (sense . head) $ groupBy g $ sort $ map senseB spointers
+    g1 x y = (==) (sense x) (sense y)
+    g2 x y = compare (sense x) (sense y)
+    groupsensesb = groupBy g1 $ sortBy g2 $ map senseB spointers
+    sortedsensesb = map sense $ sort $ map minimum groupsensesb
     filteredsensesb = [s | s <- sortedsensesb, rule1 s, rule2 s, rule3 s, rule4 s]
     -- sense rules
     rule1 sense = notElem ' ' sense
